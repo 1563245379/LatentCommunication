@@ -8,7 +8,7 @@ import torch
 import argparse
 from tqdm import tqdm
 
-from methods import default_agents
+from methods import sequential_default_agents, hierarchical_default_agents
 from models import ModelWrapper, _past_length
 from prompts import build_agent_message_sequential_latent_mas, build_agent_message_hierarchical_latent_mas
 from utils import extract_gsm8k_answer, normalize_answer, extract_markdown_python_block, run_with_timeout
@@ -38,7 +38,7 @@ class LatentMASMethod:
         self.temperature = temperature
         self.top_p = top_p
         self.generate_bs = max(1, generate_bs)
-        self.agents = getattr(args, "custom_agents", None) or default_agents()
+        self.agents = getattr(args, "custom_agents", None) or (sequential_default_agents() if args.prompt == "sequential" else hierarchical_default_agents())
         self.method_name = 'latent_mas'
         self.first_agent_text = bool(getattr(args, "first_agent_text", False)) if args else False
         self.task = args.task

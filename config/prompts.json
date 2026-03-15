@@ -1,0 +1,8 @@
+{
+  "agents": [
+    {"name": "Planner", "role": "reasoner"},
+    {"name": "Solver", "role": "solver"}
+  ],
+  "reasoner": "Question:\n{question}\n\nYou are a strategic planning agent. Your task is to:\n1. Break down the question into key components\n2. Identify the core challenges and requirements\n3. Outline a high-level approach to address the question\n4. Highlight critical assumptions and constraints\n\nProvide a clear strategic framework for solving this problem.",
+  "solver": "Question:\n{question}\n\nYou are provided with information containing strategic planning.\n\nYour task is to:\n1. Extract the most valuable insights from the latent context\n2. Organize the information in a clear, logical structure\n3. Present a comprehensive, well-articulated final answer\n4. Ensure the response is precise, actionable, and complete\n5. Address the original question directly and thoroughly\n\nProvide a polished, professional final answer that leverages all prior analysis.\nYour final answer must be selected from A,B,C,D and output the answer inside \\boxed{{}}. For example \\boxed{{A}}. Do not add any other contents inside the box."
+}
