@@ -10,7 +10,7 @@ matrix is swapped with the pre-trained one loaded from disk.
 """
 
 import argparse
-from typing import Dict, List
+from typing import Dict, List, Tuple, Optional
 
 import torch
 
@@ -62,3 +62,7 @@ class LatentMASDDMethod(LatentMASMethod):
 
         print(f"[LatentMAS-DD] Loaded data-driven alignment matrix from {alignment_path}")
         print(f"  Matrix shape: {W_align.shape}, Target norm: {target_norm.item():.4f}")
+
+    def _filter_latent_past_kv(self, past_kv: Optional[Tuple]) -> Optional[Tuple]:
+        """Only keep KV cache entries from the autoregressive latent steps."""
+        return self._truncate_past(past_kv, self.latent_steps)

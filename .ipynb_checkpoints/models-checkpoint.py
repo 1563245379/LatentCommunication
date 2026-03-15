@@ -14,7 +14,6 @@ def _ensure_pad_token(tokenizer: AutoTokenizer) -> None:
             tokenizer.pad_token = tokenizer.eos_token
         else:
             tokenizer.add_special_tokens({"pad_token": "<pad>"})
-    tokenizer.padding_side = "left"
 
 
 def _past_length(past_key_values: Optional[Union[Tuple, DynamicCache]]) -> int:
@@ -203,10 +202,10 @@ class ModelWrapper:
             cache_position=cache_position,
         )
         sequences = outputs.sequences
-        input_len = input_ids.shape[1]
         generations: List[str] = []
-        for idx in range(input_ids.shape[0]):
-            generated_ids = sequences[idx, input_len:]
+        for idx, length in enumerate(prompt_lengths):
+            length = int(length)
+            generated_ids = sequences[idx, length:]
             text = self.tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
             generations.append(text)
         return generations, outputs.past_key_values

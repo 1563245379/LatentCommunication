@@ -55,12 +55,21 @@ class LatentMASMethod:
         if past_kv is None or tokens_to_keep <= 0:
             return None
         if Cache is not None and isinstance(past_kv, Cache):
-            legacy = past_kv.to_legacy_cache()
-            trimmed_legacy = tuple(
-                tuple(self._slice_tensor(t, tokens_to_keep) for t in layer)
-                for layer in legacy
-            )
-            return past_kv.__class__.from_legacy_cache(trimmed_legacy)
+            from transformers.cache_utils import DynamicCache
+            if isinstance(past_kv, DynamicCache):
+                new_cache = DynamicCache()
+                for layer_idx, layer in enumerate(past_kv.layers):
+                    sliced_k = self._slice_tensor(layer.keys, tokens_to_keep)
+                    sliced_v = self._slice_tensor(layer.values, tokens_to_keep)
+                    new_cache.update(sliced_k, sliced_v, layer_idx)
+                return new_cache
+            if hasattr(past_kv, 'to_legacy_cache'):
+                legacy = past_kv.to_legacy_cache()
+                trimmed_legacy = tuple(
+                    tuple(self._slice_tensor(t, tokens_to_keep) for t in layer)
+                    for layer in legacy
+                )
+                return past_kv.__class__.from_legacy_cache(trimmed_legacy)
         trimmed_layers = []
         for layer in past_kv:
             if isinstance(layer, tuple):
@@ -70,6 +79,10 @@ class LatentMASMethod:
             else:
                 trimmed_layers.append(layer)
         return tuple(trimmed_layers)
+
+    def _filter_latent_past_kv(self, past_kv: Optional[Tuple]) -> Optional[Tuple]:
+        """Hook for subclasses to filter KV cache after latent generation."""
+        return past_kv
 
     @torch.no_grad()
     def run_batch(self, items: List[Dict]) -> List[Dict]:
@@ -178,6 +191,7 @@ class LatentMASMethod:
                         latent_steps=self.latent_steps,
                         past_key_values=past_kv,
                     )
+                    past_kv = self._filter_latent_past_kv(past_kv)
 
                     for idx in range(batch_size):
                         mask = wrapped_mask[idx].bool()
