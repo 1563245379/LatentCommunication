@@ -24,7 +24,9 @@ from data import (
     load_humanevalplus,
     load_medqa,
 )
+from methods.baseline import BaselineMethod
 from methods.latent_mas_dd import LatentMASDDMethod
+from methods.text_mas import TextMASMethod
 from train_alignment import get_default_alignment_path, train_dd_alignment
 from models import ModelWrapper
 from utils import auto_device, set_seed
@@ -66,7 +68,7 @@ def auto_output_file(args: argparse.Namespace) -> str:
     model_short = args.model_name.split("/")[-1].lower()
     return os.path.join(
         "results",
-        f"{model_short}_{args.task}_latent_mas_dd_{args.prompt}_seed{args.seed}.jsonl",
+        f"{model_short}_{args.task}_{args.method}_{args.prompt}_seed{args.seed}.jsonl",
     )
 
 
@@ -124,6 +126,7 @@ def main():
     parser = argparse.ArgumentParser(description="LatentMAS-DD standalone runner")
 
     # core args
+    parser.add_argument("--method", choices=["baseline", "text_mas", "latent_mas_dd"], default="latent_mas_dd")
     parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--max_samples", type=int, default=-1)
     parser.add_argument("--task", choices=[
@@ -144,6 +147,7 @@ def main():
     parser.add_argument("--temperature", type=float, default=0.6)
     parser.add_argument("--top_p", type=float, default=0.95)
     parser.add_argument("--generate_bs", type=int, default=20)
+    parser.add_argument("--text_mas_context_length", type=int, default=-1, help="TextMAS context length limit")
     parser.add_argument("--think", nargs="?", const="<think>\n", default=None)
     parser.add_argument("--latent_space_realign", action="store_true")
     parser.add_argument("--first_agent_text", action="store_true")
@@ -189,38 +193,56 @@ def main():
 
     start_time = time.time()
 
-    # ---- Build alignment path & train if needed ----
-    alignment_path = get_default_alignment_path(args.model_name)
-    if not os.path.exists(alignment_path):
-        print(f"[LatentMAS-DD] Alignment matrix not found at {alignment_path}. Training ...")
-        dataset_dir = {
-            "gsm8k": {"path": "gsm8k", "name": "main"},
-            "aime2024": "HuggingFaceH4/aime_2024",
-            "aime2025": "yentinglin/aime_2025",
-            "gpqa": "fingertap/GPQA-Diamond",
-            "arc_easy": {"path": "allenai/ai2_arc", "name": "ARC-Easy"},
-            "arc_challenge": {"path": "allenai/ai2_arc", "name": "ARC-Challenge"},
-            "mbppplus": "evalplus/mbppplus",
-            "humanevalplus": "evalplus/humanevalplus",
-            "medqa": {"path": "json", "data_files": "./data/medqa.json"},
-        }
-        train_dd_alignment(
-            model.model, model.tokenizer, alignment_path,
-            device=str(next(model.model.parameters()).device),
-            seed=args.seed,
-            data_set=dataset_dir.get(args.task, {"path": "gsm8k", "name": "main"}),
-        )
+    # ---- Build method ----
+    common_kwargs = dict(temperature=args.temperature, top_p=args.top_p)
 
-    method = LatentMASDDMethod(
-        model,
-        alignment_path=alignment_path,
-        latent_steps=args.latent_steps,
-        judger_max_new_tokens=args.max_new_tokens,
-        temperature=args.temperature,
-        top_p=args.top_p,
-        generate_bs=args.generate_bs,
-        args=args,
-    )
+    if args.method == "baseline":
+        method = BaselineMethod(
+            model,
+            max_new_tokens=args.max_new_tokens,
+            **common_kwargs,
+            generate_bs=args.generate_bs,
+            args=args,
+        )
+    elif args.method == "text_mas":
+        method = TextMASMethod(
+            model,
+            max_new_tokens_each=args.max_new_tokens,
+            **common_kwargs,
+            generate_bs=args.generate_bs,
+            args=args,
+        )
+    elif args.method == "latent_mas_dd":
+        alignment_path = get_default_alignment_path(args.model_name)
+        if not os.path.exists(alignment_path):
+            print(f"[LatentMAS-DD] Alignment matrix not found at {alignment_path}. Training ...")
+            dataset_dir = {
+                "gsm8k": {"path": "gsm8k", "name": "main"},
+                "aime2024": "HuggingFaceH4/aime_2024",
+                "aime2025": "yentinglin/aime_2025",
+                "gpqa": "fingertap/GPQA-Diamond",
+                "arc_easy": {"path": "allenai/ai2_arc", "name": "ARC-Easy"},
+                "arc_challenge": {"path": "allenai/ai2_arc", "name": "ARC-Challenge"},
+                "mbppplus": "evalplus/mbppplus",
+                "humanevalplus": "evalplus/humanevalplus",
+                "medqa": {"path": "json", "data_files": "./data/medqa.json"},
+            }
+            train_dd_alignment(
+                model.model, model.tokenizer, alignment_path,
+                device=str(next(model.model.parameters()).device),
+                seed=args.seed,
+                data_set=dataset_dir.get(args.task, {"path": "gsm8k", "name": "main"}),
+            )
+
+        method = LatentMASDDMethod(
+            model,
+            alignment_path=alignment_path,
+            latent_steps=args.latent_steps,
+            judger_max_new_tokens=args.max_new_tokens,
+            **common_kwargs,
+            generate_bs=args.generate_bs,
+            args=args,
+        )
 
     # ---- Load dataset ----
     preds: List[Dict] = []
@@ -302,7 +324,7 @@ def main():
     acc, correct = evaluate(preds)
 
     summary = {
-        "method": "latent_mas_dd",
+        "method": args.method,
         "model": args.model_name,
         "split": args.split,
         "seed": args.seed,
