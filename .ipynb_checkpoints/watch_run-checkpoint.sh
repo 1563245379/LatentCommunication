@@ -11,6 +11,7 @@ RUN_CMD="python run.py \
   --max_samples -1 \
   --generate_bs 12 \
   --latent_steps 128 \
+  --think \
   --latent_space_realign \
   --custom_prompt_file config/prompts_medqa.json \
   --resume"

@@ -1,8 +1,3 @@
 
-========== [watch_run] attempt=1 2026-03-15 18:53:02 ==========
-Traceback (most recent call last):
-  File "/workspace/LatentCommunication/run.py", line 29, in <module>
-    from methods.text_mas import TextMASMethod
-  File "/workspace/LatentCommunication/methods/text_mas.py", line 9, in <module>
-    from methods import default_agents
-ImportError: cannot import name 'default_agents' from 'methods' (/workspace/LatentCommunication/methods/__init__.py)
+========== [watch_run] attempt=1 2026-03-15 20:46:43 ==========
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.

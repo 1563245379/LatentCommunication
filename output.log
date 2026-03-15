@@ -1,31 +1,58 @@
 
-========== [watch_run] attempt=1 2026-03-15 18:53:02 ==========
-Traceback (most recent call last):
-  File "/workspace/LatentCommunication/run.py", line 29, in <module>
-    from methods.text_mas import TextMASMethod
-  File "/workspace/LatentCommunication/methods/text_mas.py", line 9, in <module>
-    from methods import default_agents
-ImportError: cannot import name 'default_agents' from 'methods' (/workspace/LatentCommunication/methods/__init__.py)
+========== [watch_run] attempt=1 2026-03-15 20:46:43 ==========
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+`torch_dtype` is deprecated! Use `dtype` instead!
 
-========== [watch_run] attempt=2 2026-03-15 18:53:12 ==========
+Fetching 8 files:   0%|                                                                                                                   | 0/8 [00:00<?, ?it/s]
+Fetching 8 files:  12%|█████████████▍                                                                                             | 1/8 [00:09<01:04,  9.16s/it]
+Fetching 8 files:  25%|██████████████████████████▊                                                                                | 2/8 [00:09<00:23,  3.85s/it]
+Fetching 8 files:  38%|████████████████████████████████████████▏                                                                  | 3/8 [00:09<00:10,  2.20s/it]
+Fetching 8 files:  50%|█████████████████████████████████████████████████████▌                                                     | 4/8 [00:10<00:06,  1.65s/it]
+Fetching 8 files: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:10<00:00,  1.29s/it]
+
+Loading weights:   0%|                                                                                                                  | 0/443 [00:00<?, ?it/s]
+Loading weights: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████| 443/443 [00:00<00:00, 5220.31it/s]
+[LatentMAS-DD] Alignment matrix not found at weights/qwen3-14b_dd_alignment_layer0.pt. Training ...
+
+Generating train split: 0 examples [00:00, ? examples/s]
+Generating train split: 300 examples [00:00, 9069.88 examples/s]
+[DD Alignment] Collecting hidden states from 300 samples (target layer=0) ...
+
+Collecting hidden state pairs: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 300/300 [00:27<00:00, 10.80it/s]
+  Source shape: torch.Size([76387, 5120]), Target shape: torch.Size([76387, 5120])
+[DD Alignment] Training ridge regression (λ=0.0001) ...
+[DD Alignment] Saved alignment matrix to weights/qwen3-14b_dd_alignment_layer0.pt
+[LatentMAS-DD] Loaded data-driven alignment matrix from weights/qwen3-14b_dd_alignment_layer0.pt
+  Matrix shape: torch.Size([5120, 5120]), Target norm: 1.7449
+
+  0%|                                                                                                                                   | 0/300 [00:00<?, ?it/s]
+
+Agents:   0%|                                                                                                                          | 0/2 [00:00<?, ?agent/s][A
+
+Agent: Planner (reasoner):   0%|                                                                                                       | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):   0%|                                                                                                       | 0/2 [00:02<?, ?agent/s]
 Traceback (most recent call last):
-  File "/workspace/LatentCommunication/run.py", line 16, in <module>
-    from data import (
-  File "/workspace/LatentCommunication/data.py", line 5, in <module>
-    from utils import extract_gold, normalize_answer
-  File "/workspace/LatentCommunication/utils.py", line 9, in <module>
-    import torch
-  File "/usr/local/lib/python3.11/dist-packages/torch/__init__.py", line 2143, in <module>
-    from . import _meta_registrations
-  File "/usr/local/lib/python3.11/dist-packages/torch/_meta_registrations.py", line 6085, in <module>
-    _create_unary_float_meta_func(aten.special_modified_bessel_k1)
-  File "/usr/local/lib/python3.11/dist-packages/torch/_meta_registrations.py", line 6059, in _create_unary_float_meta_func
-    @out_wrapper()
-     ^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/dist-packages/torch/_prims_common/wrappers.py", line 324, in _out_wrapper
-    _fn.__signature__ = inspect.Signature(  # type: ignore[attr-defined]
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.11/inspect.py", line 2965, in __init__
-    params = OrderedDict()
-             ^^^^^^^^^^^^^
-KeyboardInterrupt
+  File "/workspace/LatentCommunication/run.py", line 348, in <module>
+    main()
+  File "/workspace/LatentCommunication/run.py", line 308, in main
+    processed, preds = process_batch(
+                       ^^^^^^^^^^^^^^
+  File "/workspace/LatentCommunication/run.py", line 89, in process_batch
+    results = method.run_batch(current_batch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/LatentCommunication/methods/latent_mas.py", line 175, in run_batch
+    past_kv = self.model.generate_latent_batch(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/LatentCommunication/models.py", line 266, in generate_latent_batch
+    past_len = _past_length(past)
+               ^^^^^^^^^^^^^^^^^^
+  File "/workspace/LatentCommunication/models.py", line 21, in _past_length
+    k = past_key_values[0][0]
+        ~~~~~~~~~~~~~~~^^^
+TypeError: 'DynamicCache' object is not subscriptable

@@ -3,8 +3,9 @@ ModelWrapper for LatentMAS-DD (HuggingFace Transformers only, no vLLM).
 """
 
 import torch
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers.cache_utils import DynamicCache
 
 
 def _ensure_pad_token(tokenizer: AutoTokenizer) -> None:
@@ -15,9 +16,11 @@ def _ensure_pad_token(tokenizer: AutoTokenizer) -> None:
             tokenizer.add_special_tokens({"pad_token": "<pad>"})
 
 
-def _past_length(past_key_values: Optional[Tuple]) -> int:
+def _past_length(past_key_values: Optional[Union[Tuple, DynamicCache]]) -> int:
     if not past_key_values:
         return 0
+    if isinstance(past_key_values, DynamicCache):
+        return past_key_values.get_seq_length()
     k = past_key_values[0][0]
     return k.shape[-2]
 
