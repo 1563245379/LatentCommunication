@@ -6,7 +6,7 @@ from typing import Dict, List
 
 import argparse
 
-from methods import default_agents
+from methods import sequential_default_agents, hierarchical_default_agents
 from models import ModelWrapper
 from prompts import build_agent_messages_sequential_text_mas, build_agent_messages_hierarchical_text_mas
 from utils import extract_gsm8k_answer, normalize_answer, extract_markdown_python_block, run_with_timeout
@@ -29,7 +29,7 @@ class TextMASMethod:
         self.temperature = temperature
         self.top_p = top_p
         self.generate_bs = max(1, generate_bs)
-        self.agents = getattr(args, "custom_agents", None) or default_agents()
+        self.agents = getattr(args, "custom_agents", None) or (sequential_default_agents() if args.prompt == "sequential" else hierarchical_default_agents())
         self.args = args
         self.method_name = "text_mas"
         self.task = args.task

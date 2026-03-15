@@ -1,0 +1,31 @@
+
+========== [watch_run] attempt=1 2026-03-15 18:53:02 ==========
+Traceback (most recent call last):
+  File "/workspace/LatentCommunication/run.py", line 29, in <module>
+    from methods.text_mas import TextMASMethod
+  File "/workspace/LatentCommunication/methods/text_mas.py", line 9, in <module>
+    from methods import default_agents
+ImportError: cannot import name 'default_agents' from 'methods' (/workspace/LatentCommunication/methods/__init__.py)
+
+========== [watch_run] attempt=2 2026-03-15 18:53:12 ==========
+Traceback (most recent call last):
+  File "/workspace/LatentCommunication/run.py", line 16, in <module>
+    from data import (
+  File "/workspace/LatentCommunication/data.py", line 5, in <module>
+    from utils import extract_gold, normalize_answer
+  File "/workspace/LatentCommunication/utils.py", line 9, in <module>
+    import torch
+  File "/usr/local/lib/python3.11/dist-packages/torch/__init__.py", line 2143, in <module>
+    from . import _meta_registrations
+  File "/usr/local/lib/python3.11/dist-packages/torch/_meta_registrations.py", line 6085, in <module>
+    _create_unary_float_meta_func(aten.special_modified_bessel_k1)
+  File "/usr/local/lib/python3.11/dist-packages/torch/_meta_registrations.py", line 6059, in _create_unary_float_meta_func
+    @out_wrapper()
+     ^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/_prims_common/wrappers.py", line 324, in _out_wrapper
+    _fn.__signature__ = inspect.Signature(  # type: ignore[attr-defined]
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/inspect.py", line 2965, in __init__
+    params = OrderedDict()
+             ^^^^^^^^^^^^^
+KeyboardInterrupt
