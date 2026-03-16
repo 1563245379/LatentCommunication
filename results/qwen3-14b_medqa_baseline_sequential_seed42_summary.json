@@ -1,0 +1,12 @@
+{
+  "method": "baseline",
+  "model": "Qwen/Qwen3-14B",
+  "split": "test",
+  "seed": 42,
+  "max_samples": 300,
+  "accuracy": 0.7933333333333333,
+  "correct": 238,
+  "total_time_sec": 5754.7783,
+  "time_per_sample_sec": 19.1826,
+  "output_file": "results/qwen3-14b_medqa_baseline_sequential_seed42.jsonl"
+}
