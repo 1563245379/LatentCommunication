@@ -303,6 +303,9 @@ def main():
         for item in dataset_iter:
             if processed >= args.max_samples:
                 break
+            # if processed != 6:
+            #     processed += 1
+            #     continue
             batch.append(item)
             if len(batch) == args.generate_bs or processed + len(batch) == args.max_samples:
                 processed, preds = process_batch(

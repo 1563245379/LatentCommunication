@@ -1,0 +1,12 @@
+{
+  "method": "baseline",
+  "model": "Qwen/Qwen3-14B",
+  "split": "test",
+  "seed": 42,
+  "max_samples": 30,
+  "accuracy": 0.7,
+  "correct": 21,
+  "total_time_sec": 17004.7574,
+  "time_per_sample_sec": 566.8252,
+  "output_file": "results/qwen3-14b_aime2025_baseline_sequential_seed42.jsonl"
+}

@@ -4,12 +4,12 @@ export HF_HOME=/workspace/cache
 
 RUN_CMD="python run.py \
   --model_name Qwen/Qwen3-14B \
-  --method latent_mas_dd \
+  --method baseline \
   --task aime2025 \
   --max_new_tokens 25000 \
   --prompt sequential \
   --max_samples -1 \
-  --generate_bs 1 \
+  --generate_bs 4 \
   --latent_steps 256 \
   --think \
   --latent_space_realign \
