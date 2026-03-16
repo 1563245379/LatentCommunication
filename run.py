@@ -108,9 +108,9 @@ def process_batch(
             print("[To Tokenize]")
             print(agent_input)
             if latent_steps is not None:
-                print("[Latent Steps]")
-                print(latent_steps)
-            print("[Output]")
+                print(f"[Latent Decoded] ({latent_steps} steps)")
+            else:
+                print("[Output]")
             print(agent_output)
             print("----------------------------------------------")
         print(f"Result: Pred={res.get('prediction')} | Gold={res.get('gold')} | OK={res.get('correct')}")

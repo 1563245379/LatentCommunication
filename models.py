@@ -267,6 +267,14 @@ class ModelWrapper:
 
         last_hidden = outputs.hidden_states[-1][:, -1, :]
 
+        lm_head = self.model.get_output_embeddings()
+        if lm_head is None:
+            lm_head = getattr(self.model, "lm_head", None)
+        eos_id = self.tokenizer.eos_token_id
+
+        batch_size = input_ids.shape[0]
+        decoded_logs: List[List[str]] = [[] for _ in range(batch_size)]
+
         for step in range(latent_steps):
             source_model = self.model
             latent_vec = self._apply_latent_realignment(last_hidden, source_model)
@@ -289,4 +297,17 @@ class ModelWrapper:
             past = outputs.past_key_values
             last_hidden = outputs.hidden_states[-1][:, -1, :]
 
-        return past
+            # Decode latent vector through lm_head and log
+            if lm_head is not None:
+                logits = lm_head(last_hidden)  # [batch, vocab_size]
+                probs = torch.softmax(logits, dim=-1)
+                for b in range(batch_size):
+                    argmax_id = logits[b].argmax(dim=-1).item()
+                    eos_prob = probs[b, eos_id].item() if eos_id is not None else 0.0
+                    argmax_token = self.tokenizer.decode([argmax_id])
+                    line = (f"step={step:3d}  argmax='{argmax_token}'(id={argmax_id})  "
+                            f"eos_prob={eos_prob:.4f}")
+                    decoded_logs[b].append(line)
+                    # print(f"  [Latent] {line}")
+
+        return past, decoded_logs

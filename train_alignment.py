@@ -65,7 +65,7 @@ def train_dd_alignment(
     lambda_reg=1e-4,
     device="cuda",
     seed=42,
-    data_set="gsm8k",
+    data_set={"path": "gsm8k", "name": "main"},
 ):
     """Train and save a data-driven alignment matrix."""
     from datasets import load_dataset

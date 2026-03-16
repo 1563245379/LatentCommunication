@@ -187,7 +187,7 @@ class LatentMASMethod:
                         active_ids = ids_row[mask_row.bool()].tolist()
                         wrapped_tokens_batch.append(self.model.tokenizer.convert_ids_to_tokens(active_ids))
 
-                    past_kv = self.model.generate_latent_batch(
+                    past_kv, decoded_logs = self.model.generate_latent_batch(
                         wrapped_ids,
                         attention_mask=wrapped_mask,
                         latent_steps=self.latent_steps,
@@ -199,6 +199,7 @@ class LatentMASMethod:
                     for idx in range(batch_size):
                         mask = wrapped_mask[idx].bool()
                         trimmed_ids = wrapped_ids[idx][mask].to("cpu").tolist()
+                        latent_output = "\n".join(decoded_logs[idx]) if decoded_logs[idx] else ""
                         agent_traces[idx].append(
                             {
                                 "name": agent.name,
@@ -207,7 +208,7 @@ class LatentMASMethod:
                                 "input_ids": trimmed_ids,
                                 "input_tokens": wrapped_tokens_batch[idx],
                                 "latent_steps": self.latent_steps,
-                                "output": "",
+                                "output": latent_output,
                             }
                         )
             else:

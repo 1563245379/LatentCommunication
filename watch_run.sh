@@ -4,13 +4,13 @@ export HF_HOME=/workspace/cache
 
 RUN_CMD="python run.py \
   --model_name Qwen/Qwen3-14B \
-  --method baseline \
-  --task aime2025 \
-  --max_new_tokens 25000 \
+  --method latent_mas_dd \
+  --task gsm8k \
+  --max_new_tokens 4096 \
   --prompt sequential \
   --max_samples -1 \
-  --generate_bs 4 \
-  --latent_steps 256 \
+  --generate_bs 1 \
+  --latent_steps 64 \
   --think \
   --latent_space_realign \
   --custom_prompt_file config/prompts_aime.json \

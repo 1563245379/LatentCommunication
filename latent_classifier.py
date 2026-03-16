@@ -8,12 +8,9 @@ import torch.nn as nn
 class LatentStopClassifier(nn.Module):
     """Binary classifier predicting whether to stop latent autoregressive generation."""
 
-    def __init__(self, hidden_dim: int, intermediate_dim: int = 256) -> None:
+    def __init__(self, hidden_dim: int) -> None:
         super().__init__()
         self.classifier = nn.Sequential(
-            # nn.Linear(hidden_dim, intermediate_dim),
-            # nn.GELU(),
-            # nn.Linear(intermediate_dim, 1),
             nn.Linear(hidden_dim, 1),
         )
 
@@ -43,7 +40,6 @@ def save_classifier(
     classifier: LatentStopClassifier,
     path: str,
     hidden_dim: int,
-    intermediate_dim: int = 256,
 ) -> None:
     """Save classifier checkpoint."""
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
@@ -51,7 +47,6 @@ def save_classifier(
         {
             "state_dict": classifier.state_dict(),
             "hidden_dim": hidden_dim,
-            "intermediate_dim": intermediate_dim,
         },
         path,
     )
@@ -65,8 +60,7 @@ def load_classifier(
     """Load classifier from checkpoint."""
     checkpoint = torch.load(path, map_location="cpu", weights_only=True)
     hidden_dim = checkpoint["hidden_dim"]
-    intermediate_dim = checkpoint["intermediate_dim"]
-    classifier = LatentStopClassifier(hidden_dim, intermediate_dim)
+    classifier = LatentStopClassifier(hidden_dim)
     classifier.load_state_dict(checkpoint["state_dict"])
     if device is not None:
         classifier = classifier.to(device)

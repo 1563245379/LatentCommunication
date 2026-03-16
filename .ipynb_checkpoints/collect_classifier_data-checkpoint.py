@@ -44,6 +44,11 @@ from train_alignment import get_default_alignment_path
 from utils import auto_device, set_seed
 from train_alignment import train_dd_alignment
 
+
+# ---------------------------------------------------------------------------
+# Dataset loading helpers
+# ---------------------------------------------------------------------------
+
 AVAILABLE_TASKS: Dict[str, dict] = {
     "gsm8k": {"loader": load_gsm8k, "kwargs": {"split": "train"}},
     "aime2025": {"loader": load_aime2025, "kwargs": {"split": "train"}},
@@ -61,6 +66,11 @@ def _load_task_samples(task_name: str, max_samples: int, seed: int) -> List[Dict
     rng = np.random.RandomState(seed)
     rng.shuffle(items)
     return items[:max_samples]
+
+
+# ---------------------------------------------------------------------------
+# Latent-step data collection
+# ---------------------------------------------------------------------------
 
 @torch.no_grad()
 def collect_latent_stop_data(
@@ -101,8 +111,6 @@ def collect_latent_stop_data(
         prompt_text = model.render_chat(messages, add_generation_prompt=True)
         if args.think:
             prompt_text = f"{prompt_text}{args.think}"
-
-        print("prompt_text:", prompt_text)  # for debugging
 
         encoded = model.tokenizer(
             prompt_text,
@@ -151,24 +159,23 @@ def collect_latent_stop_data(
 
             # ---- decode to check EOS ----
             logits = lm_head(last_hidden)          # [1, vocab_size]
-            probs = torch.softmax(logits, dim=-1)
             argmax_id = logits.argmax(dim=-1).item()
-            eos_prob = probs[0, eos_id].item()
-            argmax_token = model.tokenizer.decode([argmax_id])
             label = 1 if argmax_id == eos_id else 0
-
-            print(f"  step={step:3d}  argmax='{argmax_token}'(id={argmax_id})  "
-                  f"eos_prob={eos_prob:.4f}  label={label}")
 
             all_hiddens.append(last_hidden.squeeze(0).cpu().float())
             all_labels.append(label)
 
-            if label == 1:
-                break  # stop if EOS is predicted
+            # If we already hit stop, still continue collecting remaining
+            # steps so the classifier sees both positives and negatives.
 
     hidden_states = torch.stack(all_hiddens, dim=0)  # [N, hidden_dim]
     labels = torch.tensor(all_labels, dtype=torch.float32)  # [N]
     return hidden_states, labels
+
+
+# ---------------------------------------------------------------------------
+# Training
+# ---------------------------------------------------------------------------
 
 def train_classifier(
     hidden_states: torch.Tensor,
@@ -182,7 +189,7 @@ def train_classifier(
 ) -> LatentStopClassifier:
     """Train the LatentStopClassifier on collected data."""
     classifier = LatentStopClassifier(hidden_dim).to(device)
-    criterion = nn.BCELoss(reduction="none")
+    criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(classifier.parameters(), lr=lr)
 
     dataset = TensorDataset(hidden_states, labels)
@@ -190,8 +197,7 @@ def train_classifier(
 
     n_pos = int(labels.sum().item())
     n_neg = len(labels) - n_pos
-    pos_weight = n_neg / max(n_pos, 1)
-    print(f"[Train] Samples: {len(labels)} (pos={n_pos}, neg={n_neg}, pos_weight={pos_weight:.2f})")
+    print(f"[Train] Samples: {len(labels)} (pos={n_pos}, neg={n_neg})")
 
     classifier.train()
     for epoch in range(1, epochs + 1):
@@ -203,9 +209,7 @@ def train_classifier(
             batch_l = batch_l.to(device)
 
             preds = classifier(batch_h).squeeze(-1)
-            per_sample_loss = criterion(preds, batch_l)
-            weight = torch.where(batch_l == 1, pos_weight, 1.0)
-            loss = (per_sample_loss * weight).mean()
+            loss = criterion(preds, batch_l)
 
             optimizer.zero_grad()
             loss.backward()
@@ -221,6 +225,11 @@ def train_classifier(
 
     classifier.eval()
     return classifier
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -240,6 +249,7 @@ def main() -> None:
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--think", nargs="?", const="<think>\n", default=None)
+    parser.add_argument("--do_not_enforce_qwen", action="store_true")
 
     # Training hyper-parameters
     parser.add_argument("--epochs", type=int, default=10)
@@ -256,7 +266,7 @@ def main() -> None:
     args.task = "gsm8k"
     args.prompt = "sequential"
     args.custom_prompts = None
-    args.custom_prompt_file = None
+    args.custom_prompt_text = None
     args.custom_agents = None
 
     set_seed(args.seed)
