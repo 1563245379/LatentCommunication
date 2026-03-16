@@ -11,10 +11,12 @@ classifier so it can predict adaptive stopping during inference.
 
 Usage:
     python collect_classifier_data.py \
-        --model_name Qwen/Qwen3-4B \
+        --model_name Qwen/Qwen3-14B \
         --max_samples_per_task 200 \
-        --latent_steps 20 \
-        --output weights/stop_classifier.pt
+        --latent_steps 4096 \
+        --output weights/stop_classifier.pt \
+        --think \
+        
 """
 
 import argparse
@@ -40,6 +42,7 @@ from models import ModelWrapper, _past_length
 from prompts import build_agent_message_sequential_latent_mas
 from train_alignment import get_default_alignment_path
 from utils import auto_device, set_seed
+from train_alignment import train_dd_alignment
 
 
 # ---------------------------------------------------------------------------
@@ -52,6 +55,7 @@ AVAILABLE_TASKS: Dict[str, dict] = {
     "arc_easy": {"loader": load_arc_easy, "kwargs": {"split": "train"}},
     "arc_challenge": {"loader": load_arc_challenge, "kwargs": {"split": "train"}},
     "gpqa": {"loader": load_gpqa_diamond, "kwargs": {"split": "train"}},
+    "medqa": {"loader": load_medqa, "kwargs": {"split": "train"}},
 }
 
 
@@ -182,7 +186,7 @@ def train_classifier(
     epochs: int = 10,
     batch_size: int = 256,
     lr: float = 1e-3,
-    device: torch.device = torch.device("cpu"),
+    device: torch.device = torch.device("cuda"),
 ) -> LatentStopClassifier:
     """Train the LatentStopClassifier on collected data."""
     classifier = LatentStopClassifier(hidden_dim, intermediate_dim).to(device)
@@ -245,7 +249,6 @@ def main() -> None:
                         help="Number of latent AR steps per sample for data collection.")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--latent_space_realign", action="store_true")
     parser.add_argument("--think", nargs="?", const="<think>\n", default=None)
     parser.add_argument("--do_not_enforce_qwen", action="store_true")
 
@@ -277,15 +280,20 @@ def main() -> None:
 
     # ---- Load data-driven alignment if available ----
     alignment_path = get_default_alignment_path(args.model_name)
-    if os.path.exists(alignment_path):
-        checkpoint = torch.load(alignment_path, map_location="cpu", weights_only=True)
-        W_align = checkpoint["W_align"].float().to(device)
-        target_norm = checkpoint["target_norm"].float().to(device)
-        key = id(model.model)
-        model._latent_realign_matrices[key] = (W_align, target_norm)
-        print(f"[Alignment] Loaded data-driven alignment matrix from {alignment_path}")
-    elif args.latent_space_realign:
-        print("[Alignment] Using parameter-space alignment (no DD matrix found).")
+    if not os.path.exists(alignment_path):
+        print(f"[LatentMAS-DD] Alignment matrix not found at {alignment_path}. Training ...")
+        train_dd_alignment(
+                model.model, model.tokenizer, alignment_path,
+                device=device.type,
+                seed=args.seed,
+            )
+    checkpoint = torch.load(alignment_path, map_location="cpu", weights_only=True)
+    W_align = checkpoint["W_align"].float().to(device)
+    target_norm = checkpoint["target_norm"].float().to(device)
+    key = id(model.model)
+    model._latent_realign_matrices[key] = (W_align, target_norm)
+    print(f"[Alignment] Loaded data-driven alignment matrix from {alignment_path}")
+
 
     # ---- Collect data from all tasks ----
     all_hiddens: List[torch.Tensor] = []

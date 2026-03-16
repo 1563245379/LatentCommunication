@@ -11,9 +11,10 @@ class LatentStopClassifier(nn.Module):
     def __init__(self, hidden_dim: int, intermediate_dim: int = 256) -> None:
         super().__init__()
         self.classifier = nn.Sequential(
-            nn.Linear(hidden_dim, intermediate_dim),
-            nn.GELU(),
-            nn.Linear(intermediate_dim, 1),
+            # nn.Linear(hidden_dim, intermediate_dim),
+            # nn.GELU(),
+            # nn.Linear(intermediate_dim, 1),
+            nn.Linear(hidden_dim, 1),
         )
 
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
