@@ -1,0 +1,12 @@
+{
+  "method": "latent_mas_dd",
+  "model": "Qwen/Qwen3-14B",
+  "split": "test",
+  "seed": 42,
+  "max_samples": 300,
+  "accuracy": 0.79,
+  "correct": 237,
+  "total_time_sec": 5797.4783,
+  "time_per_sample_sec": 19.3249,
+  "output_file": "results/qwen3-14b_medqa_latent_mas_dd_sequential_seed42.jsonl"
+}
