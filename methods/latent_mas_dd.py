@@ -63,6 +63,10 @@ class LatentMASDDMethod(LatentMASMethod):
         print(f"[LatentMAS-DD] Loaded data-driven alignment matrix from {alignment_path}")
         print(f"  Matrix shape: {W_align.shape}, Target norm: {target_norm.item():.4f}")
 
-    def _filter_latent_past_kv(self, past_kv: Optional[Tuple]) -> Optional[Tuple]:
+    def _filter_latent_past_kv(self, past_kv: Optional[Tuple]) -> Tuple[Optional[Tuple], int]:
         """Only keep KV cache entries from the autoregressive latent steps."""
-        return self._truncate_past(past_kv, self.latent_steps)
+        from models import _past_length
+        original_len = _past_length(past_kv)
+        truncated = self._truncate_past(past_kv, self.latent_steps)
+        offset = original_len - self.latent_steps if original_len > self.latent_steps else 0
+        return truncated, offset

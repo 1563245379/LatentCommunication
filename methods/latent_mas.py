@@ -80,9 +80,14 @@ class LatentMASMethod:
                 trimmed_layers.append(layer)
         return tuple(trimmed_layers)
 
-    def _filter_latent_past_kv(self, past_kv: Optional[Tuple]) -> Optional[Tuple]:
-        """Hook for subclasses to filter KV cache after latent generation."""
-        return past_kv
+    def _filter_latent_past_kv(self, past_kv: Optional[Tuple]) -> Tuple[Optional[Tuple], int]:
+        """Hook for subclasses to filter KV cache after latent generation.
+
+        Returns:
+            (filtered_past_kv, cache_seq_offset): The filtered cache and a
+            position offset that accounts for tokens removed from the front.
+        """
+        return past_kv, 0
 
     @torch.no_grad()
     def run_batch(self, items: List[Dict]) -> List[Dict]:
@@ -91,6 +96,7 @@ class LatentMASMethod:
 
         batch_size = len(items)
         past_kv: Optional[Tuple] = None
+        cache_seq_offset: int = 0
         agent_traces: List[List[Dict]] = [[] for _ in range(batch_size)]
         final_texts = ["" for _ in range(batch_size)]
 
@@ -125,10 +131,7 @@ class LatentMASMethod:
 
             if not is_last_agent:
                 if should_generate_text:
-                    if self.args.think:
-                        first_agent_prompts = [f"{prompt}{self.args.think}" for prompt in prompts]
-                    else:
-                        first_agent_prompts = prompts
+                    first_agent_prompts = [f"{prompt}{self.args.think}" for prompt in prompts] if self.args.think else prompts
 
                     first_encoded = self.model.tokenizer(
                         first_agent_prompts,
@@ -150,7 +153,9 @@ class LatentMASMethod:
                         temperature=self.temperature,
                         top_p=self.top_p,
                         past_key_values=past_kv,
+                        cache_seq_offset=cache_seq_offset,
                     )
+                    cache_seq_offset = 0  # text generation produces contiguous cache
 
                     for idx in range(batch_size):
                         text_out = generated_batch[idx].strip()
@@ -167,10 +172,7 @@ class LatentMASMethod:
                             }
                         )
                 else:
-                    if self.args.think:
-                        wrapped_prompts = [f"{prompt}{self.args.think}" for prompt in prompts]
-                    else:
-                        wrapped_prompts = prompts
+                    wrapped_prompts = [f"{prompt}{self.args.think}" for prompt in prompts] if self.args.think else prompts
 
                     wrapped_encoded = self.model.tokenizer(
                         wrapped_prompts,
@@ -190,8 +192,9 @@ class LatentMASMethod:
                         attention_mask=wrapped_mask,
                         latent_steps=self.latent_steps,
                         past_key_values=past_kv,
+                        cache_seq_offset=cache_seq_offset,
                     )
-                    past_kv = self._filter_latent_past_kv(past_kv)
+                    past_kv, cache_seq_offset = self._filter_latent_past_kv(past_kv)
 
                     for idx in range(batch_size):
                         mask = wrapped_mask[idx].bool()
@@ -235,6 +238,7 @@ class LatentMASMethod:
                     temperature=self.temperature,
                     top_p=self.top_p,
                     past_key_values=past_for_decoding,
+                    cache_seq_offset=cache_seq_offset,
                 )
                 for idx in range(batch_size):
                     final_text = generated_batch[idx].strip()

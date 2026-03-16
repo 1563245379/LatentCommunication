@@ -167,18 +167,19 @@ class ModelWrapper:
         temperature: float = 0.7,
         top_p: float = 0.95,
         past_key_values: Optional[Tuple] = None,
+        cache_seq_offset: int = 0,
     ) -> Tuple[List[str], Optional[Tuple]]:
         if input_ids.dim() != 2:
             raise ValueError("input_ids must be 2D with shape [batch, seq_len]")
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids, device=self.device)
-        prompt_lengths = attention_mask.sum(dim=1).tolist()
         cache_position = None
         if past_key_values is not None:
             past_len = _past_length(past_key_values)
+            pos_start = past_len + cache_seq_offset
             cache_position = torch.arange(
-                past_len,
-                past_len + input_ids.shape[-1],
+                pos_start,
+                pos_start + input_ids.shape[-1],
                 dtype=torch.long,
                 device=self.device,
             )
@@ -226,6 +227,7 @@ class ModelWrapper:
         *,
         latent_steps: int,
         past_key_values: Optional[Tuple] = None,
+        cache_seq_offset: int = 0,
     ) -> Tuple:
         if input_ids.dim() != 2:
             raise ValueError("input_ids must be 2D with shape [batch, seq_len]")
@@ -245,9 +247,16 @@ class ModelWrapper:
                 )
                 attention_mask = torch.cat([past_mask, attention_mask], dim=-1)
 
+        # Compute position_ids from attention_mask to handle left-padding correctly
+        position_ids = attention_mask.long().cumsum(-1) - 1 + cache_seq_offset
+        position_ids.masked_fill_(attention_mask == 0, 0)
+        if past_key_values is not None:
+            position_ids = position_ids[:, -input_ids.shape[1]:]
+
         outputs = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
+            position_ids=position_ids,
             past_key_values=past_key_values,
             use_cache=True,
             output_hidden_states=True,
@@ -255,12 +264,7 @@ class ModelWrapper:
         )
         past = outputs.past_key_values
 
-        if past_key_values is None:
-            last_token_indices = attention_mask.sum(1) - 1
-            batch_indices = torch.arange(input_ids.shape[0], device=input_ids.device)
-            last_hidden = outputs.hidden_states[-1][batch_indices, last_token_indices, :]
-        else:
-            last_hidden = outputs.hidden_states[-1][:, -1, :]
+        last_hidden = outputs.hidden_states[-1][:, -1, :]
 
         for step in range(latent_steps):
             source_model = self.model
