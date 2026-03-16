@@ -16,7 +16,7 @@ Usage:
         --latent_steps 4096 \
         --output weights/stop_classifier.pt \
         --think \
-        
+        --save_data trained_data
 """
 
 import argparse
