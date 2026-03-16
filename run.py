@@ -27,6 +27,7 @@ from data import (
 from methods.baseline import BaselineMethod
 from methods.latent_mas import LatentMASMethod
 from methods.latent_mas_dd import LatentMASDDMethod
+from methods.latent_mas_hybrid import LatentMASHybridMethod
 from methods.text_mas import TextMASMethod
 from train_alignment import get_default_alignment_path, train_dd_alignment
 from models import ModelWrapper
@@ -127,7 +128,7 @@ def main():
     parser = argparse.ArgumentParser(description="LatentMAS-DD standalone runner")
 
     # core args
-    parser.add_argument("--method", choices=["baseline", "text_mas", "latent_mas", "latent_mas_dd"], default="latent_mas_dd")
+    parser.add_argument("--method", choices=["baseline", "text_mas", "latent_mas", "latent_mas_dd", "latent_mas_hybrid"], default="latent_mas_dd")
     parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--max_samples", type=int, default=-1)
     parser.add_argument("--task", choices=[
@@ -153,6 +154,7 @@ def main():
     parser.add_argument("--latent_space_realign", action="store_true")
     parser.add_argument("--first_agent_text", action="store_true")
     parser.add_argument("--do_not_enforce_qwen", action="store_true")
+    parser.add_argument("--agent_models", nargs="+", default=None, help="Per-agent model names for hybrid method (one per agent)")
     parser.add_argument("--seed", type=int, default=42)
 
     parser.add_argument("--output_file", type=str, default="")
@@ -216,6 +218,16 @@ def main():
     elif args.method == "latent_mas":
         method = LatentMASMethod(
             model,
+            latent_steps=args.latent_steps,
+            judger_max_new_tokens=args.max_new_tokens,
+            **common_kwargs,
+            generate_bs=args.generate_bs,
+            args=args,
+        )
+    elif args.method == "latent_mas_hybrid":
+        method = LatentMASHybridMethod(
+            model,
+            agent_models=args.agent_models,
             latent_steps=args.latent_steps,
             judger_max_new_tokens=args.max_new_tokens,
             **common_kwargs,
