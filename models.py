@@ -305,8 +305,9 @@ class ModelWrapper:
                     argmax_id = logits[b].argmax(dim=-1).item()
                     eos_prob = probs[b, eos_id].item() if eos_id is not None else 0.0
                     argmax_token = self.tokenizer.decode([argmax_id])
-                    line = (f"step={step:3d}  argmax='{argmax_token}'(id={argmax_id})  "
-                            f"eos_prob={eos_prob:.4f}")
+                    prob = probs[b, argmax_id].item()
+                    line = (f"step={step:3d}  argmax='{argmax_token}'(id={argmax_id}) prob={prob:.4f}  "
+                            f"\neos_prob={eos_prob:.4f}")
                     decoded_logs[b].append(line)
                     # print(f"  [Latent] {line}")
 

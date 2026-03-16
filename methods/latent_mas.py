@@ -80,14 +80,22 @@ class LatentMASMethod:
                 trimmed_layers.append(layer)
         return tuple(trimmed_layers)
 
-    def _filter_latent_past_kv(self, past_kv: Optional[Tuple]) -> Tuple[Optional[Tuple], int]:
-        """Hook for subclasses to filter KV cache after latent generation.
+    # def _filter_latent_past_kv(self, past_kv: Optional[Tuple]) -> Tuple[Optional[Tuple], int]:
+    #     """Hook for subclasses to filter KV cache after latent generation.
 
-        Returns:
-            (filtered_past_kv, cache_seq_offset): The filtered cache and a
-            position offset that accounts for tokens removed from the front.
-        """
-        return past_kv, 0
+    #     Returns:
+    #         (filtered_past_kv, cache_seq_offset): The filtered cache and a
+    #         position offset that accounts for tokens removed from the front.
+    #     """
+    #     return past_kv, 0
+
+    def _filter_latent_past_kv(self, past_kv: Optional[Tuple]) -> Tuple[Optional[Tuple], int]:
+        """Only keep KV cache entries from the autoregressive latent steps."""
+        from models import _past_length
+        original_len = _past_length(past_kv)
+        truncated = self._truncate_past(past_kv, self.latent_steps)
+        offset = original_len - self.latent_steps if original_len > self.latent_steps else 0
+        return truncated, offset
 
     @torch.no_grad()
     def run_batch(self, items: List[Dict]) -> List[Dict]:

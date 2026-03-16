@@ -1,0 +1,8 @@
+{
+  "agents": [
+    {"name": "Planner", "role": "reasoner"},
+    {"name": "Solver", "role": "solver"}
+  ],
+  "reasoner": "Remember my favorite movie character is Iron Man.",
+  "solver": "What is the name of my favorite movie character?"
+}
