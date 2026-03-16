@@ -25,6 +25,7 @@ from data import (
     load_medqa,
 )
 from methods.baseline import BaselineMethod
+from methods.latent_mas import LatentMASMethod
 from methods.latent_mas_dd import LatentMASDDMethod
 from methods.text_mas import TextMASMethod
 from train_alignment import get_default_alignment_path, train_dd_alignment
@@ -126,7 +127,7 @@ def main():
     parser = argparse.ArgumentParser(description="LatentMAS-DD standalone runner")
 
     # core args
-    parser.add_argument("--method", choices=["baseline", "text_mas", "latent_mas_dd"], default="latent_mas_dd")
+    parser.add_argument("--method", choices=["baseline", "text_mas", "latent_mas", "latent_mas_dd"], default="latent_mas_dd")
     parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--max_samples", type=int, default=-1)
     parser.add_argument("--task", choices=[
@@ -208,6 +209,15 @@ def main():
         method = TextMASMethod(
             model,
             max_new_tokens_each=args.max_new_tokens,
+            **common_kwargs,
+            generate_bs=args.generate_bs,
+            args=args,
+        )
+    elif args.method == "latent_mas":
+        method = LatentMASMethod(
+            model,
+            latent_steps=args.latent_steps,
+            judger_max_new_tokens=args.max_new_tokens,
             **common_kwargs,
             generate_bs=args.generate_bs,
             args=args,
@@ -303,9 +313,6 @@ def main():
         for item in dataset_iter:
             if processed >= args.max_samples:
                 break
-            # if processed != 6:
-            #     processed += 1
-            #     continue
             batch.append(item)
             if len(batch) == args.generate_bs or processed + len(batch) == args.max_samples:
                 processed, preds = process_batch(
