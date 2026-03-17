@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Tuple
 
 from methods import sequential_default_agents, hierarchical_default_agents
-from models import ModelWrapper, _past_length
+from models import ModelWrapper
 from prompts import (
     build_agent_message_hybrid_latent_mas,
     LATENT_PLACEHOLDER,
@@ -10,11 +10,6 @@ from utils import extract_gsm8k_answer, normalize_answer, extract_markdown_pytho
 import torch
 import argparse
 from tqdm import tqdm
-
-try:
-    from transformers.cache_utils import Cache
-except ImportError:
-    Cache = None
 
 
 def transfer_via_realignment(
@@ -71,7 +66,6 @@ class LatentMASHybridMethod:
         self.method_name = 'latent_mas_hybrid'
         self.latent_only = bool(getattr(args, "latent_only", False)) if args else False
         self.sequential_info_only = bool(getattr(args, "sequential_info_only", False)) if args else False
-        self.first_agent_text = bool(getattr(args, "first_agent_text", False)) if args else False
         self.task = args.task
 
         if self.latent_only:
@@ -89,8 +83,8 @@ class LatentMASHybridMethod:
         self._load_additional_models()
 
         # Load DD alignment matrix for each model
-        if alignment_path:
-            self._load_dd_alignment(model, alignment_path)
+        # if alignment_path:
+        #     self._load_dd_alignment(model, alignment_path)
 
         self.model = model
 
@@ -124,92 +118,81 @@ class LatentMASHybridMethod:
         print(f"[HYBRID] Loaded DD alignment matrix from {alignment_path}")
         print(f"  Matrix shape: {W_align.shape}, Target norm: {target_norm.item():.4f}")
 
-    def _capture_hidden_states_from_model(
+    def _generate_text_and_collect_hiddens(
         self,
         agent_model: ModelWrapper,
-        wrapped_ids: Optional[torch.Tensor],
-        wrapped_mask: torch.Tensor,
-        past_kv: Optional[Tuple],
-        latent_steps: int,
-        *,
-        inputs_embeds: Optional[torch.Tensor] = None,
-    ) -> Tuple[Tuple, torch.Tensor]:
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        max_new_tokens: int,
+        temperature: float,
+        top_p: float,
+    ) -> Tuple[List[str], torch.Tensor]:
+        """Generate text normally, then collect last-layer hidden states of generated tokens.
+
+        Returns ``(generated_texts, hidden_states)`` where *hidden_states*
+        has shape ``[batch, n_generated, hidden_dim]``.
         """
-        Run latent generation and capture RAW hidden states.
+        # Step 1: normal text generation
+        generated_texts, _ = agent_model.generate_text_batch(
+            input_ids, attention_mask,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+        )
 
-        If *inputs_embeds* is provided (soft-token mode), it is used for the
-        initial forward pass instead of *wrapped_ids*.  In this mode *past_kv*
-        is ignored.
-        """
-        attention_mask = wrapped_mask.to(agent_model.device)
+        # Step 2: re-encode (prompt + generated) to extract last-layer hidden states
+        prompt_len = input_ids.shape[1]
+        full_texts: List[str] = []
+        for idx in range(input_ids.shape[0]):
+            prompt_text = agent_model.tokenizer.decode(
+                input_ids[idx][attention_mask[idx].bool()],
+                skip_special_tokens=False,
+            )
+            full_texts.append(prompt_text + generated_texts[idx])
 
-        if inputs_embeds is not None:
+        full_encoded = agent_model.tokenizer(
+            full_texts,
+            return_tensors="pt",
+            padding=True,
+            add_special_tokens=False,
+        )
+        full_ids = full_encoded["input_ids"].to(agent_model.device)
+        full_mask = full_encoded["attention_mask"].to(agent_model.device)
+
+        with torch.no_grad():
             outputs = agent_model.model(
-                inputs_embeds=inputs_embeds.to(agent_model.device),
-                attention_mask=attention_mask,
-                past_key_values=None,
-                use_cache=True,
+                input_ids=full_ids,
+                attention_mask=full_mask,
+                use_cache=False,
                 output_hidden_states=True,
                 return_dict=True,
             )
-        else:
-            input_ids = wrapped_ids.to(agent_model.device)
-            if past_kv is not None:
-                past_len = _past_length(past_kv)
-                if past_len > 0:
-                    past_mask = torch.ones(
-                        (attention_mask.shape[0], past_len),
-                        dtype=attention_mask.dtype,
-                        device=attention_mask.device,
-                    )
-                    attention_mask = torch.cat([past_mask, attention_mask], dim=-1)
-            outputs = agent_model.model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                past_key_values=past_kv,
-                use_cache=True,
-                output_hidden_states=True,
-                return_dict=True,
-            )
 
-        past = outputs.past_key_values
-        last_hidden = outputs.hidden_states[-1][:, -1, :]
+        # Extract hidden states only for the generated portion
+        last_layer_hidden = outputs.hidden_states[-1]  # [batch, seq, dim]
+        batch_size = full_ids.shape[0]
+        hidden_list: List[torch.Tensor] = []
+        for i in range(batch_size):
+            active_len = full_mask[i].sum().item()
+            gen_start = prompt_len
+            gen_end = active_len
+            if gen_end > gen_start:
+                hidden_list.append(last_layer_hidden[i, gen_start:gen_end, :])
+            else:
+                hidden_list.append(last_layer_hidden[i, -1:, :])
 
-        raw_latent_hidden_list = []
-        for _ in range(latent_steps):
-            raw_latent_hidden_list.append(last_hidden.unsqueeze(1))
+        # Pad to same length
+        max_gen_len = max(h.shape[0] for h in hidden_list)
+        hidden_dim = hidden_list[0].shape[-1]
+        padded_hiddens = torch.zeros(
+            batch_size, max_gen_len, hidden_dim,
+            dtype=last_layer_hidden.dtype, device=last_layer_hidden.device,
+        )
+        for i in range(batch_size):
+            seq_len = hidden_list[i].shape[0]
+            padded_hiddens[i, :seq_len] = hidden_list[i]
 
-            latent_vec = agent_model._apply_latent_realignment(last_hidden, agent_model.model)
-            latent_embed = latent_vec.unsqueeze(1)
-
-            past_len = _past_length(past)
-            latent_mask = torch.ones(
-                (latent_embed.shape[0], past_len + 1),
-                dtype=torch.long,
-                device=latent_embed.device,
-            )
-
-            outputs = agent_model.model(
-                inputs_embeds=latent_embed,
-                attention_mask=latent_mask,
-                past_key_values=past,
-                use_cache=True,
-                output_hidden_states=True,
-                return_dict=True,
-            )
-            past = outputs.past_key_values
-            last_hidden = outputs.hidden_states[-1][:, -1, :]
-
-        if latent_steps > 0:
-            raw_latent_hidden_states = torch.cat(raw_latent_hidden_list, dim=1)
-        else:
-            batch_size = attention_mask.shape[0]
-            hidden_dim = last_hidden.shape[-1]
-            raw_latent_hidden_states = torch.zeros(
-                (batch_size, 0, hidden_dim), device=last_hidden.device, dtype=last_hidden.dtype
-            )
-
-        return past, raw_latent_hidden_states
+        return generated_texts, padded_hiddens
 
     def _build_soft_token_embeds(
         self,
@@ -324,9 +307,7 @@ class LatentMASHybridMethod:
         agent_pbar = tqdm(self.agents, desc="Agents", unit="agent")
         for agent_idx, agent in enumerate(agent_pbar):
             agent_pbar.set_description(f"Agent: {agent.name} ({agent.role})")
-            is_first_agent = (agent_idx == 0)
             is_last_agent = (agent_idx == len(self.agents) - 1)
-            should_generate_text = is_first_agent and self.first_agent_text
 
             agent_model_name = self.agent_models[agent_idx]
             agent_model = self.models[agent_model_name]
@@ -349,89 +330,35 @@ class LatentMASHybridMethod:
             ]
             prompts = [agent_model.render_chat(msgs) for msgs in batch_messages]
 
+            if self.args.think:
+                agent_prompts = [f"{prompt}{self.args.think}" for prompt in prompts]
+            else:
+                agent_prompts = prompts
+
             if not is_last_agent:
-                if should_generate_text:
-                    if self.args.think:
-                        first_agent_prompts = [f"{prompt}{self.args.think}" for prompt in prompts]
-                    else:
-                        first_agent_prompts = prompts
+                # Non-last agents: generate text normally AND collect hidden states
+                encoded = agent_model.tokenizer(
+                    agent_prompts,
+                    return_tensors="pt",
+                    padding=True,
+                    add_special_tokens=False,
+                )
+                input_ids = encoded["input_ids"].to(agent_model.device)
+                attn_mask = encoded["attention_mask"].to(agent_model.device)
 
-                    first_encoded = agent_model.tokenizer(
-                        first_agent_prompts,
-                        return_tensors="pt",
-                        padding=True,
-                        add_special_tokens=False,
-                    )
-                    first_ids = first_encoded["input_ids"].to(agent_model.device)
-                    first_mask = first_encoded["attention_mask"].to(agent_model.device)
-                    first_tokens_batch: List[List[str]] = []
-                    for ids_row, mask_row in zip(first_ids, first_mask):
-                        active_ids = ids_row[mask_row.bool()].tolist()
-                        first_tokens_batch.append(agent_model.tokenizer.convert_ids_to_tokens(active_ids))
+                generated_batch, new_hiddens = self._generate_text_and_collect_hiddens(
+                    agent_model, input_ids, attn_mask,
+                    max_new_tokens=self.judger_max_new_tokens,
+                    temperature=self.temperature,
+                    top_p=self.top_p,
+                )
 
-                    generated_batch, _ = agent_model.generate_text_batch(
-                        first_ids,
-                        first_mask,
-                        max_new_tokens=self.judger_max_new_tokens,
-                        temperature=self.temperature,
-                        top_p=self.top_p,
-                        past_key_values=None,
-                    )
-
-                    if current_model_name is None:
-                        current_model_name = agent_model_name
-
-                    for idx in range(batch_size):
-                        text_out = generated_batch[idx].strip()
-                        mask = first_mask[idx].bool()
-                        trimmed_ids = first_ids[idx][mask].to("cpu").tolist()
-                        agent_traces[idx].append({
-                            "name": agent.name,
-                            "role": agent.role,
-                            "input": first_agent_prompts[idx],
-                            "input_ids": trimmed_ids,
-                            "input_tokens": first_tokens_batch[idx],
-                            "output": text_out,
-                        })
-                    continue
-
-                # Latent generation: soft-token insertion when prior latent exists
-                if self.args.think:
-                    wrapped_prompts = [f"{prompt}{self.args.think}" for prompt in prompts]
-                else:
-                    wrapped_prompts = prompts
-
-                if has_latent:
-                    print(f"\n[HYBRID] Injecting {cumulative_latent_hiddens.shape[1]} soft tokens for agent '{agent.name}'")
-                    source_model = self.models[current_model_name]
-                    combined_embeds, combined_mask = self._build_soft_token_embeds(
-                        wrapped_prompts, agent_model,
-                        cumulative_latent_hiddens, source_model,
-                    )
-                    _, new_latent_hiddens = self._capture_hidden_states_from_model(
-                        agent_model, None, combined_mask, None, self.latent_steps,
-                        inputs_embeds=combined_embeds,
-                    )
-                    n_soft = cumulative_latent_hiddens.shape[1]
-                else:
-                    wrapped_encoded = agent_model.tokenizer(
-                        wrapped_prompts,
-                        return_tensors="pt",
-                        padding=True,
-                        add_special_tokens=False,
-                    )
-                    wrapped_ids = wrapped_encoded["input_ids"].to(agent_model.device)
-                    wrapped_mask = wrapped_encoded["attention_mask"].to(agent_model.device)
-                    _, new_latent_hiddens = self._capture_hidden_states_from_model(
-                        agent_model, wrapped_ids, wrapped_mask, None, self.latent_steps,
-                    )
-                    n_soft = 0
-
+                # Accumulate hidden states across agents
                 if cumulative_latent_hiddens is None:
-                    cumulative_latent_hiddens = new_latent_hiddens
+                    cumulative_latent_hiddens = new_hiddens
                 else:
                     cumulative_latent_hiddens = torch.cat(
-                        [cumulative_latent_hiddens, new_latent_hiddens], dim=1
+                        [cumulative_latent_hiddens, new_hiddens], dim=1
                     )
                 current_model_name = agent_model_name
 
@@ -439,23 +366,17 @@ class LatentMASHybridMethod:
                     agent_traces[idx].append({
                         "name": agent.name,
                         "role": agent.role,
-                        "input": wrapped_prompts[idx],
-                        "soft_tokens_injected": n_soft,
-                        "latent_steps": self.latent_steps,
-                        "output": "",
+                        "input": agent_prompts[idx],
+                        "hidden_tokens_collected": new_hiddens.shape[1],
+                        "output": generated_batch[idx].strip(),
                     })
             else:
-                # Last agent: inject soft tokens within prompt, then generate text
-                if self.args.think:
-                    final_agent_prompts = [f"{prompt}{self.args.think}" for prompt in prompts]
-                else:
-                    final_agent_prompts = prompts
-
+                # Last agent: inject accumulated soft tokens within prompt, then generate text
                 if has_latent:
                     print(f"\n[HYBRID] Injecting {cumulative_latent_hiddens.shape[1]} soft tokens for agent '{agent.name}'")
                     source_model = self.models[current_model_name]
                     combined_embeds, combined_mask = self._build_soft_token_embeds(
-                        final_agent_prompts, agent_model,
+                        agent_prompts, agent_model,
                         cumulative_latent_hiddens, source_model,
                     )
                     generated_batch = self._generate_from_embeds(
@@ -465,7 +386,7 @@ class LatentMASHybridMethod:
                     n_soft = cumulative_latent_hiddens.shape[1]
                 else:
                     final_encoded = agent_model.tokenizer(
-                        final_agent_prompts,
+                        agent_prompts,
                         return_tensors="pt",
                         padding=True,
                         add_special_tokens=False,
@@ -487,7 +408,7 @@ class LatentMASHybridMethod:
                     agent_traces[idx].append({
                         "name": agent.name,
                         "role": agent.role,
-                        "input": final_agent_prompts[idx],
+                        "input": agent_prompts[idx],
                         "soft_tokens_injected": n_soft,
                         "output": final_text,
                     })
