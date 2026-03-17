@@ -1,3 +1,6 @@
+LATENT_PLACEHOLDER = "<|LATENT|>"
+
+
 def _get_system_message(args):
     enforce_qwen = not getattr(args, "do_not_enforce_qwen", False)
     if enforce_qwen:
@@ -731,3 +734,162 @@ You are a helpful assistant. Reason step-by-step and provide a clear, concise re
         *([{"role": "system", "content": system_message}] if system_message else []),
         {"role": "user", "content": user_content},
     ]
+
+
+def _render_hybrid_prompt(role: str, question: str, has_latent: bool, args):
+    """Render a hybrid prompt template from custom JSON config.
+
+    Templates may contain ``<|LATENT|>`` to indicate where soft-token latent
+    embeddings should be inserted.  If *has_latent* is False the placeholder
+    (and surrounding whitespace) is stripped automatically.
+    """
+    prompts_cfg = getattr(args, "custom_prompts", None)
+    if not isinstance(prompts_cfg, dict):
+        return None, None
+    custom_system = prompts_cfg.get("system", None)
+    template = prompts_cfg.get(role)
+    if template is None:
+        return custom_system, None
+    try:
+        user_content = template.format(question=question)
+    except Exception:
+        user_content = template
+    if not has_latent:
+        user_content = user_content.replace(LATENT_PLACEHOLDER, "").strip()
+    return custom_system, user_content
+
+
+def build_agent_message_hybrid_latent_mas(
+    role: str,
+    question: str,
+    has_latent: bool = False,
+    method=None,
+    args=None,
+):
+    """Build chat messages for the hybrid latent MAS method.
+
+    When *has_latent* is True the user content will contain
+    ``LATENT_PLACEHOLDER`` (``<|LATENT|>``) at the designated insertion
+    point.  The caller is expected to split the rendered prompt at that
+    marker and inject soft-token embeddings there.
+
+    Prompt templates can be customised via JSON config files.  Place
+    ``<|LATENT|>`` inside the template string to control where latent
+    embeddings are inserted.
+    """
+    custom_system, user_prompt = _render_hybrid_prompt(role, question, has_latent, args)
+    system_message = _resolve_system_message(args, custom_system)
+
+    if getattr(args, "custom_prompt_file", None) is None or user_prompt is None:
+        latent_tag = LATENT_PLACEHOLDER if has_latent else ""
+        task = args.task
+
+        if role in ("planner"):
+            if task in ["gsm8k", "aime2024", "aime2025"]:
+                user_prompt = f"""{latent_tag}
+Question: {question}
+
+You are a Planner Agent. Design a clear, step-by-step plan for solving the question.
+Your outlined plan should be concise with a few bulletpoints for each step. Do not produce the final answer.
+"""
+            elif task in ["arc_easy", "arc_challenge", "gpqa", "medqa"]:
+                user_prompt = f"""{latent_tag}
+Question: {question}
+
+You are a Planner Agent. Design a clear, step-by-step plan for solving the question.
+Your outlined plan should be concise with a few bulletpoints for each step. Do not produce the final answer.
+"""
+            elif task in ["mbppplus", "humanevalplus"]:
+                user_prompt = f"""{latent_tag}
+Question: {question}
+
+You are a Planner Agent. Design a clear, step-by-step plan for implementing the solution.
+Your outlined plan should be concise with a few bulletpoints for each step. Do not produce the final code.
+"""
+            else:
+                user_prompt = f"""{latent_tag}
+Question: {question}
+
+You are a Planner Agent. Design a clear, step-by-step plan for solving the question.
+"""
+
+        elif role in ("judger"):
+            if task in ["gsm8k", "aime2024", "aime2025"]:
+                user_prompt = f"""
+Target Question: {question}
+
+You are a helpful assistant. You are provided with latent information for reference and a target question to solve.
+{latent_tag}
+The latent information might contain irrelevant contents. Ignore it if it is not helpful for solving the target question.
+
+You must reason step-by-step to solve the provided Target Question without outputting other irrelevant information.
+
+Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
+"""
+            elif task in ["arc_easy", "arc_challenge", "gpqa", "medqa"]:
+                user_prompt = f"""
+Target Question: {question}
+
+You are a helpful assistant. You are provided with latent information for reference and a target question to solve.
+{latent_tag}
+The latent information might contain irrelevant contents. Ignore it if it is not helpful for solving the target question.
+
+You must reason step-by-step to solve the provided Target Question without outputting other irrelevant information.
+Your final answer must be selected from A,B,C,D. For example \\boxed{{A}}. Do not add any other contents inside the box.
+
+Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
+"""
+            elif task in ["mbppplus", "humanevalplus"]:
+                user_prompt = f"""
+Target Question: {question}
+
+You are a helpful assistant. You are provided with latent information for reference and a target question to solve.
+{latent_tag}
+The latent information might contain irrelevant contents. Ignore it if it is not helpful for solving the target question.
+
+You must put all python code as self-contained Python function in markdown code blocks. For example ```python
+import math
+def add(a, b):
+    return a + b```. Do not add any other contents inside the markdown code block.
+
+Now, reason step by step and output the final answer inside ```python
+YOUR_PYTHON_CODE
+```.
+"""
+            elif task in ["winogrande"]:
+                user_prompt = f"""
+Target Question: {question}
+
+You are a helpful assistant. You are provided with latent information for reference and a target question to solve.
+{latent_tag}
+The latent information might contain irrelevant contents. Ignore it if it is not helpful for solving the target question.
+
+You must reason step-by-step to solve the provided Target Question without outputting other irrelevant information.
+Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box.
+
+Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
+"""
+            else:
+                user_prompt = f"""
+Target Question: {question}
+
+You are a helpful assistant. You are provided with latent information for reference.
+{latent_tag}
+Reason step-by-step and provide a clear, concise response.
+"""
+
+        else:
+            user_prompt = f"""{latent_tag}
+Question: {question}
+
+You are a helpful assistant. Reason step-by-step and provide a clear, concise response.
+"""
+
+        if not has_latent:
+            user_prompt = user_prompt.replace(LATENT_PLACEHOLDER, "").strip()
+
+    messages = []
+    if system_message:
+        messages.append({"role": "system", "content": system_message})
+    messages.append({"role": "user", "content": user_prompt})
+    return messages

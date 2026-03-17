@@ -3,15 +3,16 @@ set -euo pipefail
 export HF_HOME=/workspace/cache
 
 RUN_CMD="python run.py \
-  --model_name Qwen/Qwen3-4B \
-  --method baseline \
-  --task gsm8k \
-  --max_new_tokens 4096 \
+  --model_name Qwen/Qwen3-14B \
+  --method latent_mas_hybrid \
+  --task medqa \
+  --max_new_tokens 512 \
   --prompt sequential \
-  --max_samples 200 \
-  --generate_bs 32 \
+  --max_samples -1 \
+  --generate_bs 1 \
   --latent_steps 64 \
   --latent_space_realign \
+  --custom_prompt_file config/test.json \
   --resume"
 
 LOG_FILE="output.log"

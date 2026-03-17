@@ -4,5 +4,5 @@
     {"name": "Solver", "role": "solver"}
   ],
   "reasoner": "Remember my favorite movie character is Iron Man.",
-  "solver": "This is the last agent thoughts:\n<|LATENT|>\nWhat is the name of my favorite movie character?"
+  "solver": "Context from previous agents:\n{context}\n\nWhat is the name of my favorite movie character?"
 }

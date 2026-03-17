@@ -176,7 +176,7 @@ class ModelWrapper:
         cache_position = None
         if past_key_values is not None:
             past_len = _past_length(past_key_values)
-            print(f"Received past_key_values length: {past_len}")
+            print(f"\nReceived past_key_values length: {past_len}")
             pos_start = past_len + cache_seq_offset
             cache_position = torch.arange(
                 pos_start,
