@@ -225,9 +225,30 @@ def main():
             args=args,
         )
     elif args.method == "latent_mas_hybrid":
+        alignment_path = get_default_alignment_path(args.model_name)
+        if not os.path.exists(alignment_path):
+            print(f"[HYBRID] Alignment matrix not found at {alignment_path}. Training ...")
+            dataset_dir = {
+                "gsm8k": {"path": "gsm8k", "name": "main"},
+                "aime2024": "HuggingFaceH4/aime_2024",
+                "aime2025": "yentinglin/aime_2025",
+                "gpqa": "fingertap/GPQA-Diamond",
+                "arc_easy": {"path": "allenai/ai2_arc", "name": "ARC-Easy"},
+                "arc_challenge": {"path": "allenai/ai2_arc", "name": "ARC-Challenge"},
+                "mbppplus": "evalplus/mbppplus",
+                "humanevalplus": "evalplus/humanevalplus",
+                "medqa": {"path": "json", "data_files": "./data/medqa.json"},
+            }
+            train_dd_alignment(
+                model.model, model.tokenizer, alignment_path,
+                device=str(next(model.model.parameters()).device),
+                seed=args.seed,
+                data_set=dataset_dir.get(args.task, {"path": "gsm8k", "name": "main"}),
+            )
         method = LatentMASHybridMethod(
             model,
             agent_models=args.agent_models,
+            alignment_path=alignment_path,
             latent_steps=args.latent_steps,
             judger_max_new_tokens=args.max_new_tokens,
             **common_kwargs,

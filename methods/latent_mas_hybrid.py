@@ -24,47 +24,26 @@ def transfer_via_realignment(
     lambda_reg: float = 1e-5
 ) -> torch.Tensor:
     """
-    Transfer hidden states from Model A to Model B using cross-model realignment.
+    Transfer hidden states using the pre-trained data-driven alignment matrix
+    stored in ``model_from._latent_realign_matrices``.
 
-    W_cross = (W_out_A^T @ W_out_A + λI)^-1 @ W_out_A^T @ W_in_B
-    embedding_B = hidden_A @ W_cross
+    This reuses the same matrix that ``_apply_latent_realignment`` uses
+    (trained by ``train_alignment.py`` / loaded by ``LatentMASDDMethod``),
+    so cross-model embedding weight computation is no longer needed.
     """
-    batch_size, seq_len, dim_A = hidden_states.shape
+    batch_size, seq_len, dim = hidden_states.shape
     original_dtype = hidden_states.dtype
 
-    W_out_A = model_from.model.get_output_embeddings().weight  # [vocab_A, dim_A]
-    W_in_B = model_to.model.get_input_embeddings().weight      # [vocab_B, dim_B]
+    matrix, target_norm = model_from._ensure_latent_realign_matrix(
+        model_from.model, hidden_states.device, model_from.args
+    )
 
-    dim_B = W_in_B.shape[1]
+    hidden_flat = hidden_states.reshape(-1, dim).float()
+    aligned_flat = torch.matmul(hidden_flat, matrix)  # [batch*seq, dim]
+    aligned_norm = aligned_flat.norm(dim=-1, keepdim=True).clamp_min(1e-6)
+    aligned_flat = aligned_flat * (target_norm / aligned_norm)
 
-    W_out_A_f32 = W_out_A.float()
-    W_in_B_f32 = W_in_B.float()
-
-    gram = torch.matmul(W_out_A_f32.T, W_out_A_f32)  # [dim_A, dim_A]
-    reg = lambda_reg * torch.eye(gram.shape[0], device=gram.device, dtype=torch.float32)
-    gram_reg = gram + reg
-
-    vocab_A, _ = W_out_A.shape
-    vocab_B, _ = W_in_B.shape
-
-    if vocab_A != vocab_B:
-        min_vocab = min(vocab_A, vocab_B)
-        W_out_A_f32 = W_out_A_f32[:min_vocab, :]
-        W_in_B_f32 = W_in_B_f32[:min_vocab, :]
-        print(f"[WARNING] Vocab size mismatch: {vocab_A} vs {vocab_B}, using first {min_vocab} tokens")
-
-    rhs = torch.matmul(W_out_A_f32.T, W_in_B_f32)  # [dim_A, dim_B]
-    W_cross = torch.linalg.solve(gram_reg, rhs)  # [dim_A, dim_B]
-
-    hidden_flat = hidden_states.reshape(-1, dim_A).float()
-    embeddings_B_flat = torch.matmul(hidden_flat, W_cross)  # [batch*seq, dim_B]
-
-    target_norm = W_in_B_f32.norm(dim=1).mean()
-    current_norms = torch.norm(embeddings_B_flat, dim=1, keepdim=True)
-    embeddings_B_flat = embeddings_B_flat * (target_norm / (current_norms + 1e-8))
-
-    embeddings_B = embeddings_B_flat.reshape(batch_size, seq_len, dim_B).to(original_dtype)
-    return embeddings_B
+    return aligned_flat.reshape(batch_size, seq_len, -1).to(original_dtype)
 
 
 class LatentMASHybridMethod:
@@ -73,6 +52,7 @@ class LatentMASHybridMethod:
         model: ModelWrapper,
         *,
         agent_models: Optional[List[str]] = None,
+        alignment_path: str = "",
         latent_steps: int = 10,
         judger_max_new_tokens: int = 256,
         temperature: float = 0.7,
@@ -108,6 +88,10 @@ class LatentMASHybridMethod:
         self.models: Dict[str, ModelWrapper] = {model.model_name: model}
         self._load_additional_models()
 
+        # Load DD alignment matrix for each model
+        if alignment_path:
+            self._load_dd_alignment(model, alignment_path)
+
         self.model = model
 
     def _load_additional_models(self):
@@ -122,6 +106,23 @@ class LatentMASHybridMethod:
                     args=self.args,
                 )
                 self.models[model_name] = new_model
+
+    @staticmethod
+    def _load_dd_alignment(model: ModelWrapper, alignment_path: str):
+        """Load pre-trained DD alignment matrix and override ModelWrapper's matrix."""
+        checkpoint = torch.load(alignment_path, map_location="cpu", weights_only=True)
+        W_align = checkpoint["W_align"].float()
+        target_norm = checkpoint["target_norm"].float()
+
+        target_device = model.device
+        W_align = W_align.to(target_device)
+        target_norm = target_norm.to(target_device)
+
+        key = id(model.model)
+        model._latent_realign_matrices[key] = (W_align, target_norm)
+
+        print(f"[HYBRID] Loaded DD alignment matrix from {alignment_path}")
+        print(f"  Matrix shape: {W_align.shape}, Target norm: {target_norm.item():.4f}")
 
     def _capture_hidden_states_from_model(
         self,

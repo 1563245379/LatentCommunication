@@ -1,0 +1,356 @@
+
+========== [watch_run] attempt=1 2026-03-17 04:25:49 ==========
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|                                                          | 0/443 [00:00<?, ?it/s]Loading weights: 100%|██████████████████████████████████████████████| 443/443 [00:00<00:00, 4975.05it/s]
+[HYBRID] Loaded DD alignment matrix from weights/qwen3-14b_dd_alignment_layer0.pt
+  Matrix shape: torch.Size([5120, 5120]), Target norm: 1.7715
+[Resume] Resuming from results/qwen3-14b_medqa_latent_mas_hybrid_sequential_seed42.jsonl, already processed 1 samples.
+  0%|▎                                                                          | 1/300 [00:00<?, ?it/s]
+Agents:   0%|                                                                  | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):   0%|                                               | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):  50%|███████████████████▌                   | 1/2 [00:03<00:03,  3.31s/agent][A
+Agent: Solver (solver):  50%|█████████████████████                     | 1/2 [00:03<00:03,  3.31s/agent][A
+Agent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:18<00:00, 10.34s/agent][AAgent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:18<00:00,  9.29s/agent]
+  1%|▍                                                                | 2/300 [00:18<1:32:17, 18.58s/it]
+[HYBRID] Injecting 64 soft tokens for agent 'Solver'
+
+==================== Problem #2 ====================
+Question:
+A 38-year-old woman presents to her primary care physician for her yearly exam. Her only complaint is difficulty losing weight. Her BMI is 34 kg/m^2. In addition to a standard physical exam, the physician orders a glucose tolerance test. The woman's fasting blood glucose level is 120 mg/dL and two-hour post 75g glucose load blood glucose level is 190 mg/dL. The physician informs the patient that she is "pre-diabetic" or at risk of developing diabetes and recommends lifestyle modification with follow-up in 6 months. Which of the following endogenous signaling molecules or receptors will increase insulin sensitivity in this patient?
+A. Catecholamines
+B. Glucagon
+C. Glucocorticoids
+D. Peroxisome proliferator-activated receptor gamma
+Choose the correct option.
+----- Agent: Planner (reasoner) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Remember my favorite movie character is Iron Man.<|im_end|>
+<|im_start|>assistant
+[Latent Decoded] (64 steps)
+
+----------------------------------------------
+----- Agent: Solver (solver) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+This is the last agent thoughts:
+<|LATENT|>
+What is the name of my favorite movie character?<|im_end|>
+<|im_start|>assistant
+[Output]
+are a red herring or part of a cipher. Alternatively, it could be a formatting error where the actual data wasn't properly inputted.
+
+Since the user hasn't provided any specific information about their favorite movie character, the agent thoughts don't contain any relevant data. The zeros might be a placeholder for a number or a code that wasn't filled in. Without more context, it's impossible to determine the favorite character's name.
+
+I should inform the user that the provided agent thoughts don't contain any useful information and ask them to provide more details about their favorite movie character. That way, I can help them find the answer based on their input.
+</think>
+
+The information provided in the "agent thoughts" appears to be a placeholder or error (a string of "he" followed by zeros), which doesn't contain any meaningful data about your favorite movie character. To answer your question, I would need more context or details about your preferences! Could you share more about your favorite movie or character? 😊
+----------------------------------------------
+Result: Pred=None | Gold=d | OK=False
+
+Agents:   0%|                                                                  | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):   0%|                                               | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):  50%|███████████████████▌                   | 1/2 [00:02<00:02,  2.88s/agent][A
+Agent: Solver (solver):  50%|█████████████████████                     | 1/2 [00:02<00:02,  2.88s/agent][A
+Agent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:14<00:00,  7.97s/agent][AAgent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:14<00:00,  7.20s/agent]
+  1%|▋                                                                | 3/300 [00:32<1:19:50, 16.13s/it]
+[HYBRID] Injecting 64 soft tokens for agent 'Solver'
+
+==================== Problem #3 ====================
+Question:
+A 33-year-old man presents to the emergency department after a motor vehicle collision. He was the front seat unrestrained driver in a head-on collision. The patient has a Glasgow Coma Scale of 5 and is subsequently intubated. Physical exam is notable for subcutaneous emphysema in the clavicular area. Needle decompression and chest tube placement are performed, and the patient is stabilized after receiving 2 units of blood and 2 liters of fluid. Chest radiography demonstrates proper tube location and resolution of the pneumothorax. The patient is transferred to the trauma intensive care unit. On the unit, a repeat chest radiograph is notable for a recurrent pneumothorax with the chest tube in place. Which of the following is the most likely diagnosis?
+A. Inappropriate chest tube placement
+B. Spontaneous pneumothorax
+C. Tension pneumothorax
+D. Tracheobronchial rupture
+Choose the correct option.
+----- Agent: Planner (reasoner) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Remember my favorite movie character is Iron Man.<|im_end|>
+<|im_start|>assistant
+[Latent Decoded] (64 steps)
+
+----------------------------------------------
+----- Agent: Solver (solver) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+This is the last agent thoughts:
+<|LATENT|>
+What is the name of my favorite movie character?<|im_end|>
+<|im_start|>assistant
+[Output]
+. Maybe the user tried to input something else but it didn't come through correctly.
+
+Since the user is asking about their favorite movie character, but there's no specific information provided in the history, I can't determine the answer from the given data. The previous thoughts don't mention any movies or characters. So, I should inform the user that I don't have enough information to answer their question and ask them to provide more details about their favorite character or movie. That way, I can help them better.
+</think>
+
+It seems there might be some confusion or formatting issue in the previous message. Could you clarify or provide more context about your favorite movie character? I’d be happy to help! 🎬
+----------------------------------------------
+Result: Pred=None | Gold=d | OK=False
+
+Agents:   0%|                                                                  | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):   0%|                                               | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):  50%|███████████████████▌                   | 1/2 [00:02<00:02,  2.88s/agent][A
+Agent: Solver (solver):  50%|█████████████████████                     | 1/2 [00:02<00:02,  2.88s/agent][A
+Agent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:13<00:00,  7.41s/agent][AAgent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:13<00:00,  6.73s/agent]
+  1%|▊                                                                | 4/300 [00:46<1:13:35, 14.92s/it]
+[HYBRID] Injecting 64 soft tokens for agent 'Solver'
+
+==================== Problem #4 ====================
+Question:
+A 45-year-old mechanic presents to the emergency department complaining of acute-onset shortness of breath while repairing a plowing tractor for his neighbor. The patient denies having any history of asthma or respiratory symptoms, and does not smoke. His temperature is 99.8°F (37.7°C), pulse is 65/min, blood pressure is 126/86 mmHg, and respirations are 20/min. His oxygen saturation is 97%. On exam, he is pale and diaphoretic. His pupils are contracted. Diffuse wheezes are noted in all lung fields. What is the best treatment for his condition?
+A. Succinylcholine
+B. Inhaled ipratropium and oxygen
+C. Atropine and pralidoxime
+D. Inhaled albuterol and oxygen
+Choose the correct option.
+----- Agent: Planner (reasoner) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Remember my favorite movie character is Iron Man.<|im_end|>
+<|im_start|>assistant
+[Latent Decoded] (64 steps)
+
+----------------------------------------------
+----- Agent: Solver (solver) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+This is the last agent thoughts:
+<|LATENT|>
+What is the name of my favorite movie character?<|im_end|>
+<|im_start|>assistant
+[Output]
+make sure my response is friendly and helpful, encouraging them to provide more context. Let me check if there's any other info I might have missed. No, the history is just those zeros. So, the best approach is to ask for clarification and more details.
+</think>
+
+It seems like the previous thoughts didn't provide any specific information about your favorite movie character. Could you share more details about your favorite movie or character? For example, what genre do you like, or do you have any specific traits or movies in mind? This will help me identify the character you're referring to! 🎬
+----------------------------------------------
+Result: Pred=None | Gold=c | OK=False
+
+Agents:   0%|                                                                  | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):   0%|                                               | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):  50%|███████████████████▌                   | 1/2 [00:02<00:02,  2.88s/agent][A
+Agent: Solver (solver):  50%|█████████████████████                     | 1/2 [00:02<00:02,  2.88s/agent][A
+Agent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:14<00:00,  8.24s/agent][AAgent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:14<00:00,  7.43s/agent]
+  2%|█                                                                | 5/300 [01:01<1:13:15, 14.90s/it]
+[HYBRID] Injecting 64 soft tokens for agent 'Solver'
+
+==================== Problem #5 ====================
+Question:
+A 64-year-old man comes to the physician with a 1-week history of sore mouth. He says that swallowing is not painful. He has had asthma for more than 20 years. His only medication is a high-dose combination salmeterol/fluticasone inhaler. His temperature is 37.1°C (98.8°F), pulse is 74/min, respirations are 14/min, and blood pressure is 125/65 mm Hg. A photograph of his oral mucosa is shown. Indirect mirror examination of the posterior oropharynx, larynx, and hypopharynx shows no abnormalities. Which of the following is the most appropriate next step in management?
+A. Fluconazole
+B. Isotretinoin
+C. Nystatin
+D. Penicillin V
+Choose the correct option.
+----- Agent: Planner (reasoner) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Remember my favorite movie character is Iron Man.<|im_end|>
+<|im_start|>assistant
+[Latent Decoded] (64 steps)
+
+----------------------------------------------
+----- Agent: Solver (solver) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+This is the last agent thoughts:
+<|LATENT|>
+What is the name of my favorite movie character?<|im_end|>
+<|im_start|>assistant
+[Output]
+something else but it didn't come through properly. 
+
+Since the user is asking about their favorite movie character, but there's no specific information provided in the history, I can't know the answer. The previous thoughts don't mention any movie or character. So I should respond by asking them to provide more details or clarify their question. 
+
+I need to make sure I don't assume anything. The best approach is to ask the user to specify which movie character they're referring to or give more context. That way, I can help them accurately.
+</think>
+
+It seems there might be a formatting issue or incomplete message in your query. Could you clarify which movie character you're referring to or provide more context? I’d be happy to help! 🎬
+----------------------------------------------
+Result: Pred=None | Gold=c | OK=False
+
+Agents:   0%|                                                                  | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):   0%|                                               | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):  50%|███████████████████▌                   | 1/2 [00:02<00:02,  2.88s/agent][A
+Agent: Solver (solver):  50%|█████████████████████                     | 1/2 [00:02<00:02,  2.88s/agent][A
+Agent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:19<00:00, 11.05s/agent][AAgent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:19<00:00,  9.83s/agent]
+  2%|█▎                                                               | 6/300 [01:21<1:21:25, 16.62s/it]
+[HYBRID] Injecting 64 soft tokens for agent 'Solver'
+
+==================== Problem #6 ====================
+Question:
+A 62-year-old man presents with episodes of palpitations for the past 3 weeks. He says that he has episodes where he feels his heart is ‘racing and pounding’, lasting 1–2 hours on average. Initially, he says the episodes would happen 1–2 times per week but now happen almost every day. This last episode has been constant for the past 2 days. He denies any seizure, loss of consciousness, dizziness, chest pain, or similar symptoms in the past. His past medical history is significant for an ischemic stroke of the right anterior cerebral artery 1 month ago, status post intravenous (IV) tissue plasminogen activator (tPA) with still some residual neurologic impairment, and long-standing gastroesophageal reflux secondary to a hiatal hernia, managed medically. The patient reports a 15-pack-year smoking history, but no alcohol or recreational drug use. The vital signs include: temperature 37.0°C (98.6°F), blood pressure 100/70 mm Hg, pulse 105/min, and respiratory rate 16/min. On physical examination, muscle strength in the lower extremities is 4/5 on the left and 5/5 on the right, along with sensory loss on the left, all of which is improved from his previous exam 3 weeks ago. There is a loss of the left half of the visual field bilaterally which is stable from the previous exam. Cardiac examination is significant for a new-onset irregular rate and rhythm. No rubs, thrills or murmurs. A noncontrast computed tomography (CT) scan shows evidence of an area of infarction in the vicinity of the right anterior cerebral artery showing normal interval change with no evidence of new hemorrhage or expansion of the area of infarction. An electrocardiogram (ECG) is performed, which is shown in the exhibit (see image below). Which of the following is the most appropriate intervention to best prevent future cerebrovascular accidents (CVAs) in this patient?
+A. Begin aspirin therapy
+B. Begin clopidogrel
+C. Carotid endarterectomy
+D. Begin warfarin and heparin
+Choose the correct option.
+----- Agent: Planner (reasoner) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Remember my favorite movie character is Iron Man.<|im_end|>
+<|im_start|>assistant
+[Latent Decoded] (64 steps)
+
+----------------------------------------------
+----- Agent: Solver (solver) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+This is the last agent thoughts:
+<|LATENT|>
+What is the name of my favorite movie character?<|im_end|>
+<|im_start|>assistant
+[Output]
+access to the user's personal preferences unless the user has provided that information before. However, looking at the history, there's no prior conversation mentioned here. The user just provided the agent thoughts as a series of spaces and then asked the question.
+
+Since the agent thoughts are empty or just spaces, it might mean that the AI didn't have any prior context to work with. The user might be testing the AI's ability to handle such scenarios or there might be a technical issue. The AI should respond by indicating that it doesn't have access to the user's personal preferences and can't determine their favorite movie character. It should also ask the user to provide more information or clarify their question.
+
+I should make sure the response is helpful and guides the user to provide the necessary details. Maybe the user intended to provide context in the agent thoughts but it didn't come through. So, the AI needs to ask for clarification or more information to answer the question accurately.
+</think>
+
+I don't have access to personal information about your preferences, so I can't tell you the name of your favorite movie character. Could you share more details about what kind of character you like or which movies you enjoy? That way, I can help you explore characters that might align with your tastes! 🎬
+----------------------------------------------
+Result: Pred=None | Gold=d | OK=False
+
+Agents:   0%|                                                                  | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):   0%|                                               | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):  50%|███████████████████▌                   | 1/2 [00:02<00:02,  2.88s/agent][A
+Agent: Solver (solver):  50%|█████████████████████                     | 1/2 [00:02<00:02,  2.88s/agent][A
+Agent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:16<00:00,  9.25s/agent][AAgent: Solver (solver): 100%|██████████████████████████████████████████| 2/2 [00:16<00:00,  8.30s/agent]
+  2%|█▌                                                               | 7/300 [01:37<1:21:06, 16.61s/it]
+[HYBRID] Injecting 64 soft tokens for agent 'Solver'
+
+==================== Problem #7 ====================
+Question:
+An investigator is studying cellular regeneration of epithelial cells. She has obtained a tissue sample from a normal thyroid gland for histopathologic examination. It shows follicles lined by a single layer of cube-like cells with large central nuclei. Which of the following parts of the female reproductive tract is also lined by this type of epithelium?
+A. Ovaries
+B. Vagina
+C. Fallopian tubes
+D. Vulva
+Choose the correct option.
+----- Agent: Planner (reasoner) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Remember my favorite movie character is Iron Man.<|im_end|>
+<|im_start|>assistant
+[Latent Decoded] (64 steps)
+
+----------------------------------------------
+----- Agent: Solver (solver) -----
+[To Tokenize]
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+This is the last agent thoughts:
+<|LATENT|>
+What is the name of my favorite movie character?<|im_end|>
+<|im_start|>assistant
+[Output]
+garbled. 
+
+The user's current question is straightforward: they want to know their favorite movie character's name. But without any prior information about their preferences, I can't know that. I should respond by asking them to provide more details about their favorite character or the movie they like. 
+
+Also, the previous thoughts might be a red herring. Maybe the user is testing if I can handle nonsensical inputs. I should focus on the current question and prompt them for more information. 
+
+I need to make sure my response is helpful and guides them to provide the necessary details. So, I'll ask them to share more about their favorite movie or character so I can help identify it.
+</think>
+
+It seems like there might be some confusion or formatting issues in the previous message. Could you clarify what your favorite movie character is or provide more details about the movie or character you're thinking of? I’d be happy to help! 😊
+----------------------------------------------
+Result: Pred=None | Gold=a | OK=False
+
+Agents:   0%|                                                                  | 0/2 [00:00<?, ?agent/s][A
+Agent: Planner (reasoner):   0%|                                               | 0/2 [00:00<?, ?agent/s][AAgent: Planner (reasoner):   0%|                                               | 0/2 [00:01<?, ?agent/s]
+Traceback (most recent call last):
+  File "/workspace/LatentCommunication/run.py", line 391, in <module>
+    main()
+  File "/workspace/LatentCommunication/run.py", line 351, in main
+    processed, preds = process_batch(
+                       ^^^^^^^^^^^^^^
+  File "/workspace/LatentCommunication/run.py", line 91, in process_batch
+    results = method.run_batch(current_batch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/LatentCommunication/methods/latent_mas_hybrid.py", line 425, in run_batch
+    _, new_latent_hiddens = self._capture_hidden_states_from_model(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/LatentCommunication/methods/latent_mas_hybrid.py", line 192, in _capture_hidden_states_from_model
+    outputs = agent_model.model(
+              ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/transformers/utils/generic.py", line 843, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/transformers/models/qwen3/modeling_qwen3.py", line 506, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+                                       ^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/transformers/utils/generic.py", line 917, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/transformers/utils/output_capturing.py", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/transformers/models/qwen3/modeling_qwen3.py", line 436, in forward
+    hidden_states = decoder_layer(
+                    ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/transformers/modeling_layers.py", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/nn/modules/module.py", line 1603, in _call_impl
+    result = forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/transformers/models/qwen3/modeling_qwen3.py", line 321, in forward
+    hidden_states = self.input_layernorm(hidden_states)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/transformers/models/qwen3/modeling_qwen3.py", line 63, in forward
+    hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
