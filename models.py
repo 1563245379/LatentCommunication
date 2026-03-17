@@ -107,8 +107,8 @@ class ModelWrapper:
     def _build_latent_realign_matrix(self, model, device, args) -> Tuple[torch.Tensor, torch.Tensor]:
         input_embeds = model.get_input_embeddings() if hasattr(model, "get_input_embeddings") else None
         output_embeds = model.get_output_embeddings() if hasattr(model, "get_output_embeddings") else None
-        if output_embeds is None:
-            output_embeds = getattr(model, "lm_head", None)
+        # if output_embeds is None:
+        #     output_embeds = getattr(model, "lm_head", None)
         if (
             input_embeds is None
             or output_embeds is None
@@ -267,10 +267,10 @@ class ModelWrapper:
 
         last_hidden = outputs.hidden_states[-1][:, -1, :]
 
-        lm_head = self.model.get_output_embeddings()
-        if lm_head is None:
-            lm_head = getattr(self.model, "lm_head", None)
-        eos_id = self.tokenizer.eos_token_id
+        # lm_head = self.model.get_output_embeddings()
+        # if lm_head is None:
+        #     lm_head = getattr(self.model, "lm_head", None)
+        # eos_id = self.tokenizer.eos_token_id
 
         batch_size = input_ids.shape[0]
         decoded_logs: List[List[str]] = [[] for _ in range(batch_size)]
@@ -297,18 +297,18 @@ class ModelWrapper:
             past = outputs.past_key_values
             last_hidden = outputs.hidden_states[-1][:, -1, :]
 
-            # Decode latent vector through lm_head and log
-            if lm_head is not None:
-                logits = lm_head(last_hidden)  # [batch, vocab_size]
-                probs = torch.softmax(logits, dim=-1)
-                for b in range(batch_size):
-                    argmax_id = logits[b].argmax(dim=-1).item()
-                    eos_prob = probs[b, eos_id].item() if eos_id is not None else 0.0
-                    argmax_token = self.tokenizer.decode([argmax_id])
-                    prob = probs[b, argmax_id].item()
-                    line = (f"step={step:3d}  argmax='{argmax_token}'(id={argmax_id}) prob={prob:.4f}  "
-                            f"\neos_prob={eos_prob:.4f}")
-                    decoded_logs[b].append(line)
+            # # Decode latent vector through lm_head and log
+            # if lm_head is not None:
+            #     logits = lm_head(last_hidden)  # [batch, vocab_size]
+            #     probs = torch.softmax(logits, dim=-1)
+            #     for b in range(batch_size):
+            #         argmax_id = logits[b].argmax(dim=-1).item()
+            #         eos_prob = probs[b, eos_id].item() if eos_id is not None else 0.0
+            #         argmax_token = self.tokenizer.decode([argmax_id])
+            #         prob = probs[b, argmax_id].item()
+            #         line = (f"step={step:3d}  argmax='{argmax_token}'(id={argmax_id}) prob={prob:.4f}  "
+            #                 f"\neos_prob={eos_prob:.4f}")
+            #         decoded_logs[b].append(line)
                     # print(f"  [Latent] {line}")
 
         return past, decoded_logs

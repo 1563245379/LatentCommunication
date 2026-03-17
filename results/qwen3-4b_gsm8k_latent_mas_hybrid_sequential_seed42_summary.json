@@ -1,0 +1,12 @@
+{
+  "method": "latent_mas_hybrid",
+  "model": "Qwen/Qwen3-4B",
+  "split": "test",
+  "seed": 42,
+  "max_samples": 200,
+  "accuracy": 0.935,
+  "correct": 187,
+  "total_time_sec": 4378.1888,
+  "time_per_sample_sec": 21.8909,
+  "output_file": "results/qwen3-4b_gsm8k_latent_mas_hybrid_sequential_seed42.jsonl"
+}

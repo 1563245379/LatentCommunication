@@ -1,0 +1,12 @@
+{
+  "method": "baseline",
+  "model": "Qwen/Qwen3-4B",
+  "split": "test",
+  "seed": 42,
+  "max_samples": 200,
+  "accuracy": 0.925,
+  "correct": 185,
+  "total_time_sec": 4496.4776,
+  "time_per_sample_sec": 22.4824,
+  "output_file": "results/qwen3-4b_gsm8k_baseline_sequential_seed42.jsonl"
+}

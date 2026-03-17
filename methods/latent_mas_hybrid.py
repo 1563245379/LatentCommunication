@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional, Tuple
 
-from . import default_agents
+from methods import sequential_default_agents, hierarchical_default_agents
 from models import ModelWrapper, _past_length
 from prompts import build_agent_message_sequential_latent_mas, build_agent_message_hierarchical_latent_mas
 from utils import extract_gsm8k_answer, normalize_answer, extract_markdown_python_block, run_with_timeout
@@ -84,7 +84,7 @@ class LatentMASHybridMethod:
         self.temperature = temperature
         self.top_p = top_p
         self.generate_bs = max(1, generate_bs)
-        self.agents = getattr(args, "custom_agents", None) or default_agents()
+        self.agents = getattr(args, "custom_agents", None) or (sequential_default_agents() if args.prompt == "sequential" else hierarchical_default_agents())
         self.method_name = 'latent_mas_hybrid'
         self.latent_only = bool(getattr(args, "latent_only", False)) if args else False
         self.sequential_info_only = bool(getattr(args, "sequential_info_only", False)) if args else False
